@@ -1,0 +1,18 @@
+{
+  "src": [
+    "pages/Index",
+    "pages/Login",
+    "pages/Register",
+    "pages/OrderList",
+    "pages/Footprint",
+    "pages/Profile",
+    "pages/MyGoods",
+    "pages/Auction",
+    "pages/Exchange",
+    "pages/Favorites",
+    "pages/Address",
+    "pages/Credit",
+    "pages/CarbonPoints",
+    "pages/RealName"
+  ]
+}
