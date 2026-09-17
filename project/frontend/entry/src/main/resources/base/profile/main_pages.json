@@ -13,6 +13,8 @@
     "pages/Address",
     "pages/Credit",
     "pages/CarbonPoints",
-    "pages/RealName"
+    "pages/RealName",
+    "pages/ServiceDetail",
+    "pages/ServiceOrders"
   ]
 }

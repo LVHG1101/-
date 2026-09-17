@@ -110,3 +110,29 @@ export interface FootprintModel {
   image: string
   visitTime: string
 }
+
+// ------------------ 服务项目 ------------------
+export interface ServiceItemModel {
+  id: number
+  code: string
+  name: string
+  icon: string
+  description: string
+  price: number
+  enabled: boolean
+}
+
+// ------------------ 服务预约订单 ------------------
+export interface ServiceOrderModel {
+  id: number
+  serviceId: number
+  serviceName: string
+  serviceIcon: string
+  contactName: string
+  contactPhone: string
+  address: string
+  appointmentTime: string
+  remark: string
+  status: string
+  createTime: string
+}
