@@ -1,0 +1,36 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "module description"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "description"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "label"
+    },
+    {
+      "name": "tab_bar_home",
+      "value": "首页"
+    },
+    {
+      "name": "tab_bar_category",
+      "value": "分类"
+    },
+    {
+      "name": "tab_bar_service",
+      "value": "服务"
+    },
+    {
+      "name": "tab_bar_cart",
+      "value": "购物车"
+    },
+    {
+      "name": "tab_bar_my",
+      "value": "我的"
+    }
+  ]
+}
