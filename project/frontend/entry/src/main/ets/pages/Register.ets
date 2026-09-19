@@ -29,6 +29,8 @@ struct Register {
     try {
       const resp = await UserApi.register(this.username, this.password, this.nickname.trim())
       if (resp.code === 200) {
+        // 把刚注册的账号带回登录页自动填好，避免用户以为「点了没反应」
+        AppStorage.setOrCreate<string>('lastRegisteredUser', this.username)
         promptAction.showToast({ message: '注册成功，请登录' })
         router.back()
       } else {

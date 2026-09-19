@@ -97,4 +97,75 @@ public class ServiceService {
         order.setStatus("CANCELLED");
         serviceOrderRepository.save(order);
     }
+
+    // ==================== 以下为管理端方法 ====================
+
+    /** 管理端：查全部服务（含已下架） */
+    public List<ServiceItem> listAllServices() {
+        return serviceItemRepository.findAll();
+    }
+
+    /** 管理端：新增或更新服务项，id 为空表示新增 */
+    @Transactional
+    public ServiceItem saveService(ServiceItem incoming) {
+        if (incoming.getName() == null || incoming.getName().isBlank()) {
+            throw new IllegalArgumentException("服务名称不能为空");
+        }
+        ServiceItem target;
+        if (incoming.getId() == null) {
+            target = new ServiceItem();
+            if (incoming.getCode() == null || incoming.getCode().isBlank()) {
+                target.setCode("svc" + System.currentTimeMillis());
+            } else {
+                target.setCode(incoming.getCode());
+            }
+        } else {
+            target = getService(incoming.getId());
+        }
+        target.setName(incoming.getName());
+        target.setIcon(incoming.getIcon() == null ? "" : incoming.getIcon());
+        target.setDescription(incoming.getDescription() == null ? "" : incoming.getDescription());
+        target.setPrice(incoming.getPrice() == null ? 0.0 : incoming.getPrice());
+        if (incoming.getEnabled() != null) {
+            target.setEnabled(incoming.getEnabled());
+        }
+        if (target.getEnabled() == null) {
+            target.setEnabled(true);
+        }
+        return serviceItemRepository.save(target);
+    }
+
+    /** 管理端：上下架切换 */
+    @Transactional
+    public ServiceItem toggleService(Long id) {
+        ServiceItem item = getService(id);
+        item.setEnabled(!Boolean.TRUE.equals(item.getEnabled()));
+        return serviceItemRepository.save(item);
+    }
+
+    /** 管理端：删除服务项 */
+    @Transactional
+    public void deleteService(Long id) {
+        serviceItemRepository.delete(getService(id));
+    }
+
+    /** 管理端：查全部预约单，可按状态过滤 */
+    public List<ServiceOrder> listAllOrders(String status) {
+        if (status == null || status.isBlank() || "ALL".equals(status)) {
+            return serviceOrderRepository.findAllByOrderByIdDesc();
+        }
+        return serviceOrderRepository.findByStatusOrderByIdDesc(status);
+    }
+
+    /** 管理端：修改预约单状态（确认 / 完成 / 取消） */
+    @Transactional
+    public void updateOrderStatus(Long orderId, String status) {
+        ServiceOrder order = serviceOrderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("预约不存在"));
+        if (status == null || status.isBlank()) {
+            throw new IllegalArgumentException("状态不能为空");
+        }
+        order.setStatus(status);
+        serviceOrderRepository.save(order);
+    }
 }

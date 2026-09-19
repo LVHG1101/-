@@ -22,6 +22,7 @@ interface GoodsEntry {
   image: Resource | string
   tag?: string
   condition?: string
+  lowCredit?: boolean
 }
 
 interface ExchangeGoods {
@@ -119,7 +120,8 @@ export struct HomeTab {
             name: g.name,
             price: g.price,
             image: imageResource(g.image),
-            condition: g.quality
+            condition: g.quality,
+            lowCredit: g.lowCredit === true
           }
           return entry
         })
@@ -348,6 +350,14 @@ export struct HomeTab {
                   .fontSize(10)
                   .fontColor('#999')
                   .width('100%')
+              }
+              if (item.lowCredit) {
+                Text('⚠ 低信誉卖家')
+                  .fontSize(10)
+                  .fontColor('#D93025')
+                  .backgroundColor('#FDECEA')
+                  .padding({ left: 4, right: 4, top: 1, bottom: 1 })
+                  .borderRadius(4)
               }
             }
             .width('100%')

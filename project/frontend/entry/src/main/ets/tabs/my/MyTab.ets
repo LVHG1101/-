@@ -1,6 +1,10 @@
 import promptAction from '@ohos.promptAction'
 import { router } from '@kit.ArkUI'
 import { UserStore } from '../../common/UserStore'
+import { CreditApi } from '../../api/CreditApi'
+
+// Index.ets 里「我的」是第 6 个 Tab（下标 5）。若组员调整了 Tab 顺序，这个常量要跟着改
+const MY_TAB_INDEX: number = 5
 
 @Builder
 export function buildMyTab() {
@@ -12,13 +16,34 @@ struct MyTabContent {
   @State isLoggedIn: boolean = false
   @State nickname: string = ''
   @State username: string = ''
+  @State isAdmin: boolean = false
+  @State creditScore: number = 100
+  @State creditLevel: string = '优秀'
+  // 登录页登录成功后 UserStore.notifyLoginStateChanged() 会让它自增，从而触发下面的刷新
+  @StorageLink('loginTick') @Watch('onLoginTickChanged') loginTick: number = 0
+  // 从子页面返回时由 Index.onPageShow 广播，用于刷新信誉分等可能已被别处改动的数据
+  @StorageLink('pageShowTick') @Watch('onVisibleAgain') pageShowTick: number = 0
+  // 切回「我的」Tab 时也要刷新
+  @StorageLink('currTabIndex') @Watch('onTabChanged') currTabIndex: number = 0
 
   aboutToAppear(): void {
     this.loadUserInfo()
   }
 
-  onPageShow(): void {
+  onLoginTickChanged(): void {
     this.loadUserInfo()
+  }
+
+  onVisibleAgain(): void {
+    if (this.isLoggedIn) {
+      this.loadUserInfo()
+    }
+  }
+
+  onTabChanged(): void {
+    if (this.currTabIndex === MY_TAB_INDEX && this.isLoggedIn) {
+      this.loadUserInfo()
+    }
   }
 
   async loadUserInfo() {
@@ -26,6 +51,19 @@ struct MyTabContent {
     if (this.isLoggedIn) {
       this.nickname = await UserStore.getNickname()
       this.username = await UserStore.getUsername()
+      this.isAdmin = await UserStore.isAdmin()
+      try {
+        const credit = await CreditApi.my()
+        if (credit.code === 200) {
+          this.creditScore = credit.score
+          this.creditLevel = credit.level
+        }
+      } catch (e) {
+      }
+    } else {
+      this.isAdmin = false
+      this.creditScore = 100
+      this.creditLevel = '优秀'
     }
   }
 
@@ -38,6 +76,7 @@ struct MyTabContent {
     this.isLoggedIn = false
     this.nickname = ''
     this.username = ''
+    UserStore.notifyLoginStateChanged()
     promptAction.showToast({ message: '已退出登录' })
   }
 
@@ -109,8 +148,31 @@ struct MyTabContent {
           .padding({ left: 16, right: 16, top: 44 })
 
           Row() {
-            this.StatItem('0', '碳积分')
-            this.StatItem('良好', '信用分')
+            // 这里必须内联渲染：@Builder 按值传参时不会随状态变化重建，
+            // 之前用 this.StatItem(this.creditScore...) 会导致分数一直停在首次渲染的值
+            Column({ space: 4 }) {
+              Text('0')
+                .fontSize(18)
+                .fontWeight(FontWeight.Bold)
+                .fontColor('#fff')
+              Text('碳积分')
+                .fontSize(12)
+                .fontColor('#FFE0CC')
+            }
+            .layoutWeight(1)
+            .alignItems(HorizontalAlign.Center)
+
+            Column({ space: 4 }) {
+              Text(this.creditScore.toString())
+                .fontSize(18)
+                .fontWeight(FontWeight.Bold)
+                .fontColor('#fff')
+              Text('信用分·' + this.creditLevel)
+                .fontSize(12)
+                .fontColor('#FFE0CC')
+            }
+            .layoutWeight(1)
+            .alignItems(HorizontalAlign.Center)
           }
           .width('100%')
           .padding({ left: 16, right: 16, top: 20, bottom: 16 })
@@ -178,7 +240,7 @@ struct MyTabContent {
         Row() {
           this.OrderStatusItem('待付款', 'PENDING_PAY', $r('app.media.moneycard'))
           this.OrderStatusItem('待收货', 'PENDING_RECEIVE', $r('app.media.car'))
-          this.OrderStatusItem('待评价', 'PENDING_REVIEW', $r('app.media.talk'))
+          this.OrderStatusItem('已完成', 'COMPLETED', $r('app.media.talk'))
           this.OrderStatusItem('退换/售后', 'AFTER_SALE', $r('app.media.remove'))
           this.OrderStatusItem('全部订单', 'ALL', $r('app.media.order'))
         }
@@ -251,6 +313,10 @@ struct MyTabContent {
         .margin({ top: 12 })
 
         Column() {
+          if (this.isAdmin) {
+            this.MenuRow('管理后台', 'pages/AdminHome')
+            Divider().color('#F0F0F0').margin({ left: 16 })
+          }
           this.MenuRow('个人资料', 'pages/Profile')
           Divider().color('#F0F0F0').margin({ left: 16 })
           this.MenuRow('实名认证', 'pages/RealName')
@@ -291,21 +357,6 @@ struct MyTabContent {
     .width('100%')
     .height('100%')
     .backgroundColor('#f5f5f5')
-  }
-
-  @Builder
-  StatItem(value: string, label: string) {
-    Column({ space: 4 }) {
-      Text(value)
-        .fontSize(18)
-        .fontWeight(FontWeight.Bold)
-        .fontColor('#fff')
-      Text(label)
-        .fontSize(12)
-        .fontColor('#FFE0CC')
-    }
-    .layoutWeight(1)
-    .alignItems(HorizontalAlign.Center)
   }
 
   @Builder

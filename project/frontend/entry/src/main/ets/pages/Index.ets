@@ -12,6 +12,15 @@ struct Index {
   @Provide
   private navPathStack: NavPathStack = new NavPathStack();
 
+  /**
+   * Index 是 @Entry 页面，从子页面返回时只有它会收到 onPageShow。
+   * 这里把事件广播出去，让 Tab 里的子组件也能知道「页面又可见了」并刷新数据。
+   */
+  onPageShow(): void {
+    const tick: number | undefined = AppStorage.get<number>('pageShowTick')
+    AppStorage.setOrCreate<number>('pageShowTick', (tick === undefined ? 0 : tick) + 1)
+  }
+
   @Builder
   buildTabBar(txt: Resource, idx: number) {
     Column({ space: 4 }) {

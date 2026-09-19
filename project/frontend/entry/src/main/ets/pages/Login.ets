@@ -10,6 +10,15 @@ struct Login {
   @State password: string = ''
   @State isLoading: boolean = false
 
+  // Login 是 @Entry 页面，从注册页返回时会触发 onPageShow（子组件收不到这个回调）
+  onPageShow(): void {
+    const registered: string | undefined = AppStorage.get<string>('lastRegisteredUser')
+    if (registered !== undefined && registered !== '') {
+      this.username = registered
+      AppStorage.setOrCreate<string>('lastRegisteredUser', '')
+    }
+  }
+
   async doLogin() {
     if (!this.username.trim()) {
       promptAction.showToast({ message: '请输入用户名' })
@@ -26,8 +35,10 @@ struct Login {
       if (resp.code === 200) {
         const token = resp.token || ''
         const nickname = resp.nickname || this.username
-        await UserStore.saveLogin(token, this.username, nickname)
-        promptAction.showToast({ message: '登录成功' })
+        const role = resp.role || 'user'
+        await UserStore.saveLogin(token, this.username, nickname, role)
+        UserStore.notifyLoginStateChanged()
+        promptAction.showToast({ message: role === 'admin' ? '登录成功（管理员）' : '登录成功' })
         router.back()
       } else {
         promptAction.showToast({ message: resp.message || '登录失败' })

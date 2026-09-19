@@ -9,4 +9,8 @@ import java.util.List;
 @Repository
 public interface ServiceOrderRepository extends JpaRepository<ServiceOrder, Long> {
     List<ServiceOrder> findByUserIdOrderByIdDesc(Long userId);
+
+    List<ServiceOrder> findAllByOrderByIdDesc();
+
+    List<ServiceOrder> findByStatusOrderByIdDesc(String status);
 }

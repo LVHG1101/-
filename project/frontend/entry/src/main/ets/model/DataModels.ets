@@ -156,6 +156,11 @@ export interface GoodsItemModel {
   quality: string
   categoryId: number
   description?: string
+  // 以下由后端附带，用于展示「低信誉卖家」标识
+  userId?: number
+  sellerName?: string
+  sellerCredit?: number
+  lowCredit?: boolean
 }
 
 // ------------------ 后端订单 ------------------
@@ -167,4 +172,37 @@ export interface TradeOrderModel {
   payMethod: string
   createTime: string
   items: OrderGoodsItem[]
+}
+
+// ------------------ 售后申请 ------------------
+export interface AfterSaleModel {
+  id: number
+  orderId: number
+  orderNo: string
+  totalPrice: number
+  userId: number
+  username: string
+  reason: string
+  status: string
+  previousStatus: string
+  applyTime: string
+  handleTime: string
+  adminRemark: string
+}
+
+// ------------------ 管理端预约单（含下单用户） ------------------
+export interface AdminServiceOrderModel {
+  id: number
+  userId: number
+  serviceId: number
+  serviceCode: string
+  serviceName: string
+  serviceIcon: string
+  contactName: string
+  contactPhone: string
+  address: string
+  appointmentTime: string
+  remark: string
+  status: string
+  createTime: string
 }

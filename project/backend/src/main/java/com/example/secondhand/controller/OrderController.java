@@ -107,4 +107,56 @@ public class OrderController {
         map.put("data", result);
         return map;
     }
+
+    @PostMapping("/confirm")
+    public Map<String, Object> confirm(@RequestBody Map<String, Object> body) {
+        Map<String, Object> map = new HashMap<>();
+        User user = currentUser();
+        if (user == null) {
+            map.put("code", 401);
+            map.put("message", "未登录");
+            return map;
+        }
+        Object orderId = body.get("orderId");
+        if (orderId == null) {
+            map.put("code", 400);
+            map.put("message", "orderId 不能为空");
+            return map;
+        }
+        try {
+            orderService.confirmReceive(user.getId(), Long.valueOf(String.valueOf(orderId)));
+            map.put("code", 200);
+            map.put("message", "已确认收货");
+        } catch (Exception e) {
+            map.put("code", 400);
+            map.put("message", e.getMessage());
+        }
+        return map;
+    }
+
+    @PostMapping("/cancel")
+    public Map<String, Object> cancel(@RequestBody Map<String, Object> body) {
+        Map<String, Object> map = new HashMap<>();
+        User user = currentUser();
+        if (user == null) {
+            map.put("code", 401);
+            map.put("message", "未登录");
+            return map;
+        }
+        Object orderId = body.get("orderId");
+        if (orderId == null) {
+            map.put("code", 400);
+            map.put("message", "orderId 不能为空");
+            return map;
+        }
+        try {
+            orderService.cancelOrder(user.getId(), Long.valueOf(String.valueOf(orderId)));
+            map.put("code", 200);
+            map.put("message", "订单已取消");
+        } catch (Exception e) {
+            map.put("code", 400);
+            map.put("message", e.getMessage());
+        }
+        return map;
+    }
 }

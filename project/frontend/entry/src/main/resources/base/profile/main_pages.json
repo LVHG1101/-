@@ -17,6 +17,11 @@
     "pages/ServiceDetail",
     "pages/ServiceOrders",
     "pages/OrderConfirm",
-    "pages/GoodsDetail"
+    "pages/GoodsDetail",
+    "pages/AdminHome",
+    "pages/AdminAfterSale",
+    "pages/AdminService",
+    "pages/AdminServiceOrder",
+    "pages/AdminUser"
   ]
 }

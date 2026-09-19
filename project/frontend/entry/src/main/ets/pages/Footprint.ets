@@ -64,7 +64,7 @@ struct Footprint {
   }
 
   goDetail(item: FootprintModel) {
-    router.pushUrl({ url: 'pages/GoodsDetail', params: { id: item.goodsId, title: item.name } })
+    router.pushUrl({ url: 'pages/GoodsDetail', params: { goodsId: item.goodsId } })
   }
 
   build() {

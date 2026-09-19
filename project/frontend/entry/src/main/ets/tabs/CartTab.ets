@@ -5,6 +5,9 @@ import { CartItemModel } from '../model/DataModels'
 import { imageResource } from '../common/ImageUtil'
 import { UserStore } from '../common/UserStore'
 
+// Index.ets 里「购物车」是第 5 个 Tab（下标 4）。若组员调整了 Tab 顺序，这个常量要跟着改
+const CART_TAB_INDEX: number = 4
+
 @Builder
 export function buildCartTab() {
   CartTab()
@@ -16,13 +19,29 @@ export struct CartTab {
   @State isEditMode: boolean = false
   @State isLoggedIn: boolean = false
   @State isRefreshing: boolean = false
+  // 子组件收不到 onPageShow，靠 UserStore.notifyLoginStateChanged() 广播的计数器触发刷新
+  @StorageLink('loginTick') @Watch('onLoginTickChanged') loginTick: number = 0
+  // 从子页面返回时由 Index.onPageShow 广播，用于刷新可能已在别处变动的购物车
+  @StorageLink('pageShowTick') @Watch('onVisibleAgain') pageShowTick: number = 0
+  // 切回购物车 Tab 时刷新
+  @StorageLink('currTabIndex') @Watch('onTabChanged') currTabIndex: number = 0
 
   aboutToAppear(): void {
     this.loadCart()
   }
 
-  onPageShow(): void {
+  onLoginTickChanged(): void {
     this.loadCart()
+  }
+
+  onVisibleAgain(): void {
+    this.loadCart()
+  }
+
+  onTabChanged(): void {
+    if (this.currTabIndex === CART_TAB_INDEX) {
+      this.loadCart()
+    }
   }
 
   async loadCart() {

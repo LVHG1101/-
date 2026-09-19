@@ -28,6 +28,10 @@ class PayBody {
   payMethod: string = ''
 }
 
+class OrderIdBody {
+  orderId: number = 0
+}
+
 export class OrderApi {
   /** 从购物车创建订单 */
   static async create(cartItemIds: number[]): Promise<OrderResult> {
@@ -54,5 +58,21 @@ export class OrderApi {
       return []
     }
     return result.data ?? []
+  }
+
+  /** 确认收货 */
+  static async confirm(orderId: number): Promise<ApiResult> {
+    const body = new OrderIdBody()
+    body.orderId = orderId
+    const json = await HttpUtil.postWithAuth('/order/confirm', body)
+    return parseJson(json) as ApiResult
+  }
+
+  /** 取消订单（仅待付款） */
+  static async cancel(orderId: number): Promise<ApiResult> {
+    const body = new OrderIdBody()
+    body.orderId = orderId
+    const json = await HttpUtil.postWithAuth('/order/cancel', body)
+    return parseJson(json) as ApiResult
   }
 }

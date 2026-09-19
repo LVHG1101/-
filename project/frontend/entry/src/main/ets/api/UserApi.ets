@@ -7,6 +7,7 @@ export class LoginResult {
   token: string = ''
   username: string = ''
   nickname: string = ''
+  role: string = 'user'
 }
 
 export class ApiResult {

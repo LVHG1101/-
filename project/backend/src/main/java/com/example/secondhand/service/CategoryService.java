@@ -2,8 +2,10 @@ package com.example.secondhand.service;
 
 import com.example.secondhand.entity.Category;
 import com.example.secondhand.entity.Goods;
+import com.example.secondhand.entity.User;
 import com.example.secondhand.repository.CategoryRepository;
 import com.example.secondhand.repository.GoodsRepository;
+import com.example.secondhand.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -19,6 +21,12 @@ public class CategoryService {
 
     @Autowired
     private GoodsRepository goodsRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private CreditService creditService;
 
     @EventListener(ApplicationReadyEvent.class)
     public void initData() {
@@ -65,7 +73,15 @@ public class CategoryService {
     }
 
     private void saveGoods(String name, Double price, String image, String quality, String description, Long categoryId) {
-        goodsRepository.save(new Goods(null, name, price, image, quality, description, categoryId, true));
+        Goods goods = new Goods();
+        goods.setName(name);
+        goods.setPrice(price);
+        goods.setImage(image);
+        goods.setQuality(quality);
+        goods.setDescription(description);
+        goods.setCategoryId(categoryId);
+        goods.setEnabled(true);
+        goodsRepository.save(goods);
     }
 
     public List<Category> listCategories() {
@@ -73,20 +89,42 @@ public class CategoryService {
     }
 
     public List<Goods> listGoods(Long categoryId) {
-        if (categoryId == null) {
-            return goodsRepository.findByEnabledTrueOrderByIdAsc();
+        List<Goods> list = categoryId == null
+                ? goodsRepository.findByEnabledTrueOrderByIdAsc()
+                : goodsRepository.findByEnabledTrueAndCategoryIdOrderByIdAsc(categoryId);
+        for (Goods goods : list) {
+            fillSeller(goods);
         }
-        return goodsRepository.findByEnabledTrueAndCategoryIdOrderByIdAsc(categoryId);
+        return list;
     }
 
     public Goods getGoods(Long id) {
-        return goodsRepository.findById(id)
+        Goods goods = goodsRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("商品不存在"));
+        fillSeller(goods);
+        return goods;
     }
 
-    public Goods publishGoods(Goods goods) {
+    /** 发布商品，记录卖家以便做信誉约束 */
+    public Goods publishGoods(Goods goods, Long userId) {
         goods.setId(null);
         goods.setEnabled(true);
+        goods.setUserId(userId);
         return goodsRepository.save(goods);
+    }
+
+    /** 填充卖家信誉信息，供前端展示「低信誉卖家」标识 */
+    private void fillSeller(Goods goods) {
+        if (goods == null || goods.getUserId() == null) {
+            return;
+        }
+        User seller = userRepository.findById(goods.getUserId()).orElse(null);
+        if (seller == null) {
+            return;
+        }
+        int score = creditService.scoreOf(seller);
+        goods.setSellerName(seller.getNickname() == null ? seller.getUsername() : seller.getNickname());
+        goods.setSellerCredit(score);
+        goods.setLowCredit(score < CreditService.LOW_THRESHOLD);
     }
 }

@@ -28,4 +28,17 @@ public class Goods {
     private Long categoryId;
 
     private Boolean enabled = true;
+
+    private Long userId; // 卖家 id
+
+    // ---- 以下字段不入库，仅在返回给前端时填充卖家信誉信息 ----
+
+    @Transient
+    private String sellerName;
+
+    @Transient
+    private Integer sellerCredit;
+
+    @Transient
+    private Boolean lowCredit;
 }

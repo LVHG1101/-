@@ -3,6 +3,7 @@ package com.example.secondhand.controller;
 import com.example.secondhand.entity.Goods;
 import com.example.secondhand.entity.User;
 import com.example.secondhand.service.CategoryService;
+import com.example.secondhand.service.CreditService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,6 +18,9 @@ public class GoodsController {
 
     @Autowired
     private CategoryService categoryService;
+
+    @Autowired
+    private CreditService creditService;
 
     private User currentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -69,7 +73,16 @@ public class GoodsController {
                 map.put("message", "价格不能为空");
                 return map;
             }
-            Goods goods = categoryService.publishGoods(body);
+            // 信誉分低于阈值时禁止发布
+            int score = creditService.scoreOf(user);
+            if (score < CreditService.LOW_THRESHOLD) {
+                map.put("code", 403);
+                map.put("message", "信誉分不足（当前 " + score + " 分，低于 "
+                        + CreditService.LOW_THRESHOLD + " 分），暂时无法发布商品");
+                map.put("creditScore", score);
+                return map;
+            }
+            Goods goods = categoryService.publishGoods(body, user.getId());
             map.put("code", 200);
             map.put("message", "发布成功");
             map.put("data", goods);

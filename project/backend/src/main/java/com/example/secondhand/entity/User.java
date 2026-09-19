@@ -28,6 +28,8 @@ public class User implements UserDetails {
 
     private String role = "user"; // 角色
 
+    private Integer creditScore = 100; // 信誉分，0~100，低于 60 视为低信誉
+
     private Boolean accountNonExpired = true; // 账号是否过期
     private Boolean accountNonLocked = true; // 账号是否被锁定
     private Boolean credentialsNonExpired = true; // 密码是否过期

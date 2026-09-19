@@ -161,6 +161,14 @@ export struct CategoryTab {
                       .maxLines(1)
                       .textOverflow({ overflow: TextOverflow.Ellipsis })
                       .width('100%')
+                    if (item.lowCredit) {
+                      Text('⚠ 低信誉卖家')
+                        .fontSize(10)
+                        .fontColor('#D93025')
+                        .backgroundColor('#FDECEA')
+                        .padding({ left: 4, right: 4, top: 1, bottom: 1 })
+                        .borderRadius(4)
+                    }
                     Row() {
                       Text('¥' + item.price)
                         .fontSize(15)

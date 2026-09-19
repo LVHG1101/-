@@ -4,6 +4,9 @@ import { ServiceApi } from '../api/ServiceApi'
 import { ServiceItemModel } from '../model/DataModels'
 import { UserStore } from '../common/UserStore'
 
+// Index.ets 里「服务」是第 4 个 Tab（下标 3）。若组员调整了 Tab 顺序，这个常量要跟着改
+const SERVICE_TAB_INDEX: number = 3
+
 @Builder
 export function buildServiceTab() {
   ServiceTab()
@@ -15,6 +18,12 @@ export struct ServiceTab {
   @State isLoggedIn: boolean = false
   @State loaded: boolean = false
   @State isRefreshing: boolean = false
+  // 子组件收不到 onPageShow，靠 UserStore.notifyLoginStateChanged() 广播的计数器触发刷新
+  @StorageLink('loginTick') @Watch('onLoginTickChanged') loginTick: number = 0
+  // 从子页面返回时由 Index.onPageShow 广播；管理员改过服务项后回来能看到最新列表
+  @StorageLink('pageShowTick') @Watch('onVisibleAgain') pageShowTick: number = 0
+  // 切回服务 Tab 时刷新
+  @StorageLink('currTabIndex') @Watch('onTabChanged') currTabIndex: number = 0
 
   private fallbackServices: ServiceItemModel[] = [
     { id: 1, code: 'recycle', name: '上门回收', icon: '♻️', description: '闲置物品上门回收，旧手机、旧家电、旧书刊均可，估价后当面结算', price: 0, enabled: true },
@@ -29,8 +38,18 @@ export struct ServiceTab {
     this.loadServices()
   }
 
-  onPageShow(): void {
+  onLoginTickChanged(): void {
     this.loadServices()
+  }
+
+  onVisibleAgain(): void {
+    this.loadServices()
+  }
+
+  onTabChanged(): void {
+    if (this.currTabIndex === SERVICE_TAB_INDEX) {
+      this.loadServices()
+    }
   }
 
   async loadServices() {
