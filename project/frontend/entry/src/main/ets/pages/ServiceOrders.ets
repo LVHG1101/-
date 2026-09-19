@@ -40,7 +40,7 @@ struct ServiceOrders {
   }
 
   statusColor(status: string): string {
-    if (status === 'PENDING') return '#e0620d'
+    if (status === 'PENDING') return '#1A5FD6'
     if (status === 'CONFIRMED') return '#1A5FD6'
     if (status === 'COMPLETED') return '#34a853'
     return '#999'
@@ -54,6 +54,16 @@ struct ServiceOrders {
     } catch (e) {
       promptAction.showToast({ message: '网络请求失败' })
     }
+  }
+
+  iconFor(code: string): string {
+    if (code === 'recycle') return '♻️'
+    if (code === 'authenticate') return '🔍'
+    if (code === 'repair') return '🔧'
+    if (code === 'clean') return '🧼'
+    if (code === 'rent') return '📦'
+    if (code === 'errand') return '🛵'
+    return '🔧'
   }
 
   build() {
@@ -79,7 +89,7 @@ struct ServiceOrders {
             .width(160)
             .height(40)
             .fontColor('#fff')
-            .backgroundColor('#e0620d')
+            .backgroundColor('#1A5FD6')
             .borderRadius(20)
             .onClick(() => { router.pushUrl({ url: 'pages/Login' }) })
         }
@@ -101,7 +111,7 @@ struct ServiceOrders {
             ForEach(this.orders, (item: ServiceOrderModel) => {
               Column({ space: 10 }) {
                 Row({ space: 10 }) {
-                  Text(item.serviceIcon).fontSize(30)
+                  Text(this.iconFor(item.serviceCode)).fontSize(30)
                   Column({ space: 4 }) {
                     Text(item.serviceName).fontSize(15).fontWeight(FontWeight.Medium).fontColor('#333')
                     Text('预约时间：' + item.appointmentTime).fontSize(12).fontColor('#999')
@@ -131,9 +141,9 @@ struct ServiceOrders {
                     Button('取消预约')
                       .fontSize(12)
                       .height(30)
-                      .fontColor('#e0620d')
+                      .fontColor('#1A5FD6')
                       .backgroundColor('#fff')
-                      .border({ width: 1, color: '#e0620d' })
+                      .border({ width: 1, color: '#1A5FD6' })
                       .borderRadius(15)
                       .onClick(() => { this.cancelOrder(item) })
                   }

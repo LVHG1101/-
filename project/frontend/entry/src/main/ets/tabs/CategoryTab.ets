@@ -1,19 +1,9 @@
+import { router } from '@kit.ArkUI'
 import promptAction from '@ohos.promptAction'
-
-interface CategoryGoods {
-  id: number
-  name: string
-  price: number
-  image?: Resource
-  emoji?: string
-  condition: string
-}
-
-interface CategoryNode {
-  name: string
-  icon: string
-  goods: CategoryGoods[]
-}
+import { CategoryApi } from '../api/CategoryApi'
+import { CartApi } from '../api/CartApi'
+import { CategoryItemModel, GoodsItemModel } from '../model/DataModels'
+import { imageResource } from '../common/ImageUtil'
 
 @Builder
 export function buildCategoryTab() {
@@ -22,74 +12,94 @@ export function buildCategoryTab() {
 
 @Component
 export struct CategoryTab {
+  @State categories: CategoryItemModel[] = []
+  @State goods: GoodsItemModel[] = []
   @State currentIndex: number = 0
+  @State loaded: boolean = false
+  @State isRefreshing: boolean = false
 
-  @State categories: CategoryNode[] = [
-    {
-      name: '数码', icon: '📱',
-      goods: [
-        { id: 101, name: 'iPhone 15 128G', price: 3999, image: $r('app.media.phone2'), condition: '九成新' },
-        { id: 102, name: '小米笔记本 Pro', price: 3299, image: $r('app.media.computer'), condition: '九五新' },
-        { id: 103, name: 'iPad Air 5', price: 2499, image: $r('app.media.pad'), condition: '九成新' },
-        { id: 104, name: 'AirPods Pro 2', price: 899, image: $r('app.media.hairphone'), condition: '八成新' },
-        { id: 105, name: 'Apple Watch S8', price: 1599, image: $r('app.media.watch'), condition: '九成新' },
-        { id: 106, name: '小米 14 Ultra', price: 4299, image: $r('app.media.phone1'), condition: '九五新' },
-      ]
-    },
-    {
-      name: '图书', icon: '📚',
-      goods: [
-        { id: 201, name: '高等数学教材', price: 15, emoji: '📕', condition: '八成新' },
-        { id: 202, name: '经典小说合集', price: 25, emoji: '📗', condition: '九成新' },
-        { id: 203, name: '考研英语真题', price: 20, emoji: '📘', condition: '七成新' },
-        { id: 204, name: '编程入门教程', price: 30, emoji: '📙', condition: '九成新' },
-      ]
-    },
-    {
-      name: '服饰', icon: '👕',
-      goods: [
-        { id: 301, name: '纯棉T恤 M码', price: 39, emoji: '👕', condition: '全新' },
-        { id: 302, name: '秋冬外套', price: 129, emoji: '🧥', condition: '九成新' },
-        { id: 303, name: '运动鞋 42码', price: 199, emoji: '👟', condition: '八成新' },
-        { id: 304, name: '牛仔裤', price: 59, emoji: '👖', condition: '九成新' },
-      ]
-    },
-    {
-      name: '家居', icon: '🏠',
-      goods: [
-        { id: 401, name: '小米电视 55寸', price: 1299, image: $r('app.media.tv'), condition: '九成新' },
-        { id: 402, name: '米家空调 1.5匹', price: 1599, image: $r('app.media.airconditaion'), condition: '九成新' },
-        { id: 403, name: '米家冰箱 530L', price: 2299, image: $r('app.media.icebox'), condition: '九五新' },
-        { id: 404, name: '洗衣机 10kg', price: 899, image: $r('app.media.washingmachine'), condition: '八成新' },
-        { id: 405, name: '智能门锁', price: 499, image: $r('app.media.lock'), condition: '九成新' },
-      ]
-    },
-    {
-      name: '母婴', icon: '🍼',
-      goods: [
-        { id: 501, name: '婴儿推车', price: 299, emoji: '🛴', condition: '八成新' },
-        { id: 502, name: '儿童玩具积木', price: 45, emoji: '🧸', condition: '九成新' },
-        { id: 503, name: '婴儿床', price: 399, emoji: '🛏️', condition: '八成新' },
-      ]
-    },
-    {
-      name: '运动', icon: '🏃',
-      goods: [
-        { id: 601, name: '篮球', price: 89, emoji: '🏀', condition: '八成新' },
-        { id: 602, name: '瑜伽垫', price: 35, emoji: '🧘', condition: '九成新' },
-        { id: 603, name: '双肩运动包', price: 99, image: $r('app.media.bag'), condition: '九成新' },
-        { id: 604, name: '电动牙刷', price: 59, image: $r('app.media.brushteeth'), condition: '全新' },
-      ]
-    },
+  private fallbackCategories: CategoryItemModel[] = [
+    { id: 1, code: 'digital', name: '数码', icon: '数' },
+    { id: 2, code: 'appliance', name: '家电', icon: '电' },
+    { id: 3, code: 'home', name: '家居', icon: '居' },
+    { id: 4, code: 'other', name: '其他', icon: '其' },
   ]
+
+  private fallbackGoods: GoodsItemModel[] = [
+    { id: 1, name: 'iPhone 15 128G', price: 3999, image: 'phone2', quality: '九成新', categoryId: 1 },
+    { id: 2, name: '小米笔记本 Pro 14', price: 3299, image: 'computer', quality: '九五新', categoryId: 1 },
+    { id: 3, name: 'iPad Air 5 64G', price: 2499, image: 'pad', quality: '九成新', categoryId: 1 },
+    { id: 4, name: 'AirPods Pro 2', price: 899, image: 'hairphone', quality: '八成新', categoryId: 1 },
+  ]
+
+  aboutToAppear(): void {
+    this.loadCategories()
+  }
+
+  async loadCategories() {
+    try {
+      this.categories = await CategoryApi.list()
+    } catch (e) {
+      this.categories = []
+    }
+    if (this.categories.length === 0) {
+      this.categories = this.fallbackCategories
+    }
+    this.loaded = true
+    this.loadGoods(0)
+  }
+
+  async loadGoods(index: number) {
+    this.currentIndex = index
+    if (this.categories.length === 0) {
+      this.goods = []
+      return
+    }
+    const categoryId = this.categories[index].id
+    try {
+      this.goods = await CategoryApi.goods(categoryId)
+    } catch (e) {
+      this.goods = []
+    }
+    if (this.goods.length === 0 && this.currentIndex === 0) {
+      this.goods = this.fallbackGoods
+    }
+  }
+
+  async refreshGoods() {
+    await this.loadGoods(this.currentIndex)
+    this.isRefreshing = false
+  }
+
+  iconFor(code: string): string {
+    if (code === 'digital') return '📱'
+    if (code === 'appliance') return '📺'
+    if (code === 'home') return '🏠'
+    if (code === 'other') return '📦'
+    return '📦'
+  }
+
+  addToCart(item: GoodsItemModel) {
+    CartApi.add(item.id).then((resp) => {
+      if (resp.code === 200) {
+        promptAction.showToast({ message: '已加入购物车' })
+      } else if (resp.code === 401) {
+        promptAction.showToast({ message: '请先登录' })
+      } else {
+        promptAction.showToast({ message: resp.message || '加入失败' })
+      }
+    }).catch(() => {
+      promptAction.showToast({ message: '网络请求失败' })
+    })
+  }
 
   build() {
     Row() {
       List() {
-        ForEach(this.categories, (item: CategoryNode, index: number) => {
+        ForEach(this.categories, (item: CategoryItemModel, index: number) => {
           ListItem() {
             Column({ space: 6 }) {
-              Text(item.icon).fontSize(22)
+              Text(this.iconFor(item.code)).fontSize(22)
               Text(item.name)
                 .fontSize(13)
                 .fontWeight(this.currentIndex === index ? FontWeight.Bold : FontWeight.Normal)
@@ -100,7 +110,7 @@ export struct CategoryTab {
             .alignItems(HorizontalAlign.Center)
             .backgroundColor(this.currentIndex === index ? '#fff' : '#f6f6f6')
             .border({ width: { left: 3 }, color: this.currentIndex === index ? '#1A5FD6' : Color.Transparent })
-            .onClick(() => { this.currentIndex = index })
+            .onClick(() => { this.loadGoods(index) })
           }
         })
       }
@@ -111,72 +121,85 @@ export struct CategoryTab {
 
       Column() {
         Row() {
-          Text(this.categories[this.currentIndex].icon + ' ' + this.categories[this.currentIndex].name)
+          Text(this.iconFor(this.categories.length > 0 ? this.categories[this.currentIndex].code : '') + ' ' +
+            (this.categories.length > 0 ? this.categories[this.currentIndex].name : ''))
             .fontSize(18)
             .fontWeight(FontWeight.Bold)
             .fontColor('#333')
           Blank()
-          Text('共' + this.categories[this.currentIndex].goods.length + '件')
+          Text('共' + this.goods.length + '件')
             .fontSize(12)
             .fontColor('#999')
         }
         .width('100%')
         .padding({ left: 14, right: 14, top: 16, bottom: 12 })
 
-        Scroll() {
-          Grid() {
-            ForEach(this.categories[this.currentIndex].goods, (item: CategoryGoods) => {
-              GridItem() {
-                Column({ space: 6 }) {
-                  if (item.image) {
-                    Image(item.image)
+        if (this.goods.length === 0) {
+          Column({ space: 10 }) {
+            Text('📦').fontSize(48)
+            Text('该分类暂无商品').fontSize(14).fontColor('#999')
+          }
+          .width('100%')
+          .layoutWeight(1)
+          .justifyContent(FlexAlign.Center)
+        } else {
+          Refresh({ refreshing: $$this.isRefreshing }) {
+            Scroll() {
+            Grid() {
+              ForEach(this.goods, (item: GoodsItemModel) => {
+                GridItem() {
+                  Column({ space: 6 }) {
+                    Image(imageResource(item.image))
                       .width('100%')
                       .height(110)
                       .objectFit(ImageFit.Cover)
                       .borderRadius(8)
-                  } else {
-                    Text(item.emoji ?? '📦')
-                      .fontSize(56)
+                      .onClick(() => { router.pushUrl({ url: 'pages/GoodsDetail', params: { goodsId: item.id } }) })
+                    Text(item.name)
+                      .fontSize(12)
+                      .fontColor('#333')
+                      .maxLines(1)
+                      .textOverflow({ overflow: TextOverflow.Ellipsis })
                       .width('100%')
-                      .height(110)
-                      .textAlign(TextAlign.Center)
-                      .backgroundColor('#F5F7FA')
-                      .borderRadius(8)
-                  }
-                  Text(item.name)
-                    .fontSize(12)
-                    .fontColor('#333')
-                    .maxLines(1)
-                    .textOverflow({ overflow: TextOverflow.Ellipsis })
+                    Row() {
+                      Text('¥' + item.price)
+                        .fontSize(15)
+                        .fontWeight(FontWeight.Bold)
+                        .fontColor('#1A5FD6')
+                      Blank()
+                      Text(item.quality)
+                        .fontSize(10)
+                        .fontColor('#999')
+                    }
                     .width('100%')
-                  Row() {
-                    Text('¥' + item.price)
-                      .fontSize(15)
-                      .fontWeight(FontWeight.Bold)
-                      .fontColor('#1A5FD6')
-                    Blank()
-                    Text(item.condition)
-                      .fontSize(10)
-                      .fontColor('#999')
+                    Button('加入购物车')
+                      .fontSize(11)
+                      .height(26)
+                      .width('100%')
+                      .fontColor('#fff')
+                      .backgroundColor('#1A5FD6')
+                      .borderRadius(13)
+                      .onClick(() => { this.addToCart(item) })
                   }
                   .width('100%')
+                  .padding(8)
+                  .backgroundColor('#fff')
+                  .borderRadius(10)
                 }
-                .width('100%')
-                .padding(8)
-                .backgroundColor('#fff')
-                .borderRadius(10)
-                .onClick(() => { promptAction.showToast({ message: '商品详情开发中' }) })
-              }
-            })
+              })
+            }
+            .width('100%')
+            .columnsTemplate('1fr 1fr')
+            .columnsGap(10)
+            .rowsGap(10)
+            .padding({ left: 12, right: 12, bottom: 20 })
+            }
+            .layoutWeight(1)
+            .scrollBar(BarState.Off)
           }
-          .width('100%')
-          .columnsTemplate('1fr 1fr')
-          .columnsGap(10)
-          .rowsGap(10)
-          .padding({ left: 12, right: 12, bottom: 20 })
+          .layoutWeight(1)
+          .onRefreshing(() => { this.refreshGoods() })
         }
-        .layoutWeight(1)
-        .scrollBar(BarState.Off)
       }
       .layoutWeight(1)
       .height('100%')

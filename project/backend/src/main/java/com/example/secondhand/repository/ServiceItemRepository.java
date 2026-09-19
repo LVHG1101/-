@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface ServiceItemRepository extends JpaRepository<ServiceItem, Long> {
     List<ServiceItem> findByEnabledTrueOrderByIdAsc();
+    java.util.Optional<ServiceItem> findByCode(String code);
 }

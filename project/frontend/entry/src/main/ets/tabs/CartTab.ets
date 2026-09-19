@@ -1,15 +1,9 @@
+import { router } from '@kit.ArkUI'
 import promptAction from '@ohos.promptAction'
-
-interface CartGoods {
-  id: number
-  name: string
-  price: number
-  image: Resource
-  condition: string
-  count: number
-  selected: boolean
-  invalid?: boolean
-}
+import { CartApi } from '../api/CartApi'
+import { CartItemModel } from '../model/DataModels'
+import { imageResource } from '../common/ImageUtil'
+import { UserStore } from '../common/UserStore'
 
 @Builder
 export function buildCartTab() {
@@ -18,69 +12,94 @@ export function buildCartTab() {
 
 @Component
 export struct CartTab {
-  @State cartList: CartGoods[] = [
-    { id: 1, name: 'iPhone 15 128G', price: 3999, image: $r('app.media.phone2'), condition: '九成新', count: 1, selected: true },
-    { id: 2, name: 'AirPods Pro 2', price: 899, image: $r('app.media.hairphone'), condition: '八成新', count: 2, selected: true },
-    { id: 3, name: 'Apple Watch S8', price: 1599, image: $r('app.media.watch'), condition: '九成新', count: 1, selected: false },
-  ]
-
-  @State invalidGoods: CartGoods[] = [
-    { id: 99, name: '小米电视 55寸', price: 1299, image: $r('app.media.tv'), condition: '九成新', count: 1, selected: false, invalid: true },
-  ]
-
+  @State cartList: CartItemModel[] = []
   @State isEditMode: boolean = false
+  @State isLoggedIn: boolean = false
+  @State isRefreshing: boolean = false
 
-  copyItem(src: CartGoods): CartGoods {
-    return {
-      id: src.id,
-      name: src.name,
-      price: src.price,
-      image: src.image,
-      condition: src.condition,
-      count: src.count,
-      selected: src.selected,
-      invalid: src.invalid
+  aboutToAppear(): void {
+    this.loadCart()
+  }
+
+  onPageShow(): void {
+    this.loadCart()
+  }
+
+  async loadCart() {
+    this.isLoggedIn = await UserStore.isLoggedIn()
+    if (!this.isLoggedIn) {
+      this.cartList = []
+      return
+    }
+    try {
+      this.cartList = await CartApi.list()
+    } catch (e) {
+      this.cartList = []
     }
   }
 
-  toggleSelect(item: CartGoods) {
-    const idx = this.cartList.findIndex(i => i.id === item.id)
-    if (idx >= 0) {
-      const copy = this.copyItem(this.cartList[idx])
-      copy.selected = !copy.selected
-      const newList = [...this.cartList]
-      newList[idx] = copy
-      this.cartList = newList
+  async refreshCart() {
+    await this.loadCart()
+    this.isRefreshing = false
+  }
+
+  async changeCount(item: CartItemModel, delta: number) {
+    const count = Math.max(1, item.count + delta)
+    try {
+      await CartApi.update(item.id, count, item.selected)
+      this.loadCart()
+    } catch (e) {
+      promptAction.showToast({ message: '操作失败' })
     }
   }
 
-  changeCount(item: CartGoods, delta: number) {
-    const idx = this.cartList.findIndex(i => i.id === item.id)
-    if (idx >= 0) {
-      const copy = this.copyItem(this.cartList[idx])
-      copy.count = Math.max(1, copy.count + delta)
-      const newList = [...this.cartList]
-      newList[idx] = copy
-      this.cartList = newList
+  async toggleSelect(item: CartItemModel) {
+    try {
+      await CartApi.update(item.id, item.count, !item.selected)
+      this.loadCart()
+    } catch (e) {
+      promptAction.showToast({ message: '操作失败' })
     }
   }
 
-  removeItem(item: CartGoods) {
-    this.cartList = this.cartList.filter(i => i.id !== item.id)
-    promptAction.showToast({ message: '已删除' })
+  async removeItem(item: CartItemModel) {
+    try {
+      await CartApi.delete(item.id)
+      promptAction.showToast({ message: '已删除' })
+      this.loadCart()
+    } catch (e) {
+      promptAction.showToast({ message: '操作失败' })
+    }
   }
 
   isAllSelected(): boolean {
     return this.cartList.length > 0 && this.cartList.every(i => i.selected)
   }
 
-  toggleSelectAll() {
+  async toggleSelectAll() {
     const target = !this.isAllSelected()
-    this.cartList = this.cartList.map(i => {
-      const copy = this.copyItem(i)
-      copy.selected = target
-      return copy
-    })
+    try {
+      for (const item of this.cartList) {
+        await CartApi.update(item.id, item.count, target)
+      }
+      this.loadCart()
+    } catch (e) {
+      promptAction.showToast({ message: '操作失败' })
+    }
+  }
+
+  async deleteSelected() {
+    try {
+      for (const item of this.cartList) {
+        if (item.selected) {
+          await CartApi.delete(item.id)
+        }
+      }
+      promptAction.showToast({ message: '已删除选中商品' })
+      this.loadCart()
+    } catch (e) {
+      promptAction.showToast({ message: '操作失败' })
+    }
   }
 
   getSelectedCount(): number {
@@ -96,21 +115,20 @@ export struct CartTab {
       promptAction.showToast({ message: '请先选择商品' })
       return
     }
-    promptAction.showToast({ message: '结算功能开发中' })
+    const selectedIds = this.cartList.filter(i => i.selected).map(i => i.id)
+    router.pushUrl({ url: 'pages/OrderConfirm', params: { cartItemIds: selectedIds } })
   }
 
   @Builder
-  buildCartItem(item: CartGoods) {
+  buildCartItem(item: CartItemModel) {
     Row({ space: 10 }) {
       Checkbox({ name: item.id.toString() })
         .select(item.selected)
         .shape(CheckBoxShape.CIRCLE)
         .selectedColor('#1A5FD6')
-        .onChange((value: boolean) => {
-          this.toggleSelect(item)
-        })
+        .onChange((value: boolean) => { this.toggleSelect(item) })
 
-      Image(item.image)
+      Image(imageResource(item.image))
         .width(72)
         .height(72)
         .objectFit(ImageFit.Contain)
@@ -124,10 +142,6 @@ export struct CartTab {
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .width('100%')
-        Text(item.condition)
-          .fontSize(11)
-          .fontColor('#999')
-          .width('100%')
         Row() {
           Text('¥' + item.price.toFixed(2))
             .fontSize(16)
@@ -135,17 +149,19 @@ export struct CartTab {
             .fontWeight(FontWeight.Bold)
           Blank()
           if (this.isEditMode) {
-            Text('删除')
+            Button('删除')
               .fontSize(13)
+              .height(28)
               .fontColor('#1A5FD6')
-              .padding({ left: 10, right: 10, top: 4, bottom: 4 })
+              .backgroundColor('#fff')
+              .border({ width: 1, color: '#1A5FD6' })
+              .borderRadius(14)
               .onClick(() => { this.removeItem(item) })
           } else {
             Row({ space: 4 }) {
-              Text('-')
+              Button('-')
                 .width(26).height(26)
-                .textAlign(TextAlign.Center)
-                .fontSize(16)
+                .fontSize(14)
                 .backgroundColor('#f5f5f5')
                 .fontColor('#333')
                 .borderRadius(13)
@@ -154,10 +170,9 @@ export struct CartTab {
                 .fontSize(14)
                 .width(28)
                 .textAlign(TextAlign.Center)
-              Text('+')
+              Button('+')
                 .width(26).height(26)
-                .textAlign(TextAlign.Center)
-                .fontSize(16)
+                .fontSize(14)
                 .backgroundColor('#1A5FD6')
                 .fontColor('#fff')
                 .borderRadius(13)
@@ -173,43 +188,6 @@ export struct CartTab {
     .width('100%')
     .padding(10)
     .backgroundColor('#fff')
-    .borderRadius(10)
-  }
-
-  @Builder
-  buildInvalidItem(item: CartGoods) {
-    Row({ space: 10 }) {
-      Image(item.image)
-        .width(72)
-        .height(72)
-        .objectFit(ImageFit.Contain)
-        .backgroundColor('#F2F2F2')
-        .borderRadius(8)
-        .opacity(0.4)
-      Column({ space: 6 }) {
-        Text(item.name)
-          .fontSize(14)
-          .fontColor('#999')
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-          .width('100%')
-        Text('该商品已失效')
-          .fontSize(11)
-          .fontColor('#ccc')
-          .width('100%')
-      }
-      .layoutWeight(1)
-      .alignItems(HorizontalAlign.Start)
-      Text('失效')
-        .fontSize(11)
-        .fontColor('#999')
-        .padding({ left: 10, right: 10, top: 4, bottom: 4 })
-        .backgroundColor('#f0f0f0')
-        .borderRadius(12)
-    }
-    .width('100%')
-    .padding(10)
-    .backgroundColor('#fafafa')
     .borderRadius(10)
   }
 
@@ -232,53 +210,50 @@ export struct CartTab {
       .padding({ left: 16, right: 16, top: 14, bottom: 14 })
       .backgroundColor('#fff')
 
-      Scroll() {
-        Column({ space: 10 }) {
-          if (this.cartList.length === 0 && this.invalidGoods.length === 0) {
-            Column({ space: 14 }) {
-              Image($r('app.media.cart')).width(64).height(64).opacity(0.4)
-              Text('购物车空空如也').fontSize(14).fontColor('#999')
-              Text('快去挑选心仪的闲置好物吧').fontSize(12).fontColor('#ccc')
-            }
-            .width('100%')
-            .padding({ top: 80 })
-            .justifyContent(FlexAlign.Center)
-          } else {
-            ForEach(this.cartList, (item: CartGoods) => {
-              this.buildCartItem(item)
-            }, (item: CartGoods) => item.id.toString())
-
-            if (this.invalidGoods.length > 0) {
-              Row() {
-                Text('失效商品')
-                  .fontSize(12)
-                  .fontColor('#999')
-                Blank()
-                Text('清空 ›')
-                  .fontSize(12)
-                  .fontColor('#999')
-                  .onClick(() => {
-                    this.invalidGoods = []
-                    promptAction.showToast({ message: '已清空失效商品' })
-                  })
-              }
-              .width('100%')
-              .padding({ left: 4, right: 4, top: 6 })
-
-              ForEach(this.invalidGoods, (item: CartGoods) => {
-                this.buildInvalidItem(item)
-              }, (item: CartGoods) => item.id.toString())
-            }
-          }
+      if (!this.isLoggedIn) {
+        Column({ space: 12 }) {
+          Text('🛒').fontSize(48)
+          Text('登录后查看购物车').fontSize(15).fontColor('#333')
+          Button('去登录')
+            .width(160)
+            .height(40)
+            .fontColor('#fff')
+            .backgroundColor('#1A5FD6')
+            .borderRadius(20)
+            .onClick(() => { promptAction.showToast({ message: '请到「我的」页登录' }) })
         }
         .width('100%')
-        .padding(12)
+        .layoutWeight(1)
+        .justifyContent(FlexAlign.Center)
+      } else if (this.cartList.length === 0) {
+        Column({ space: 14 }) {
+          Image($r('app.media.cart')).width(64).height(64).opacity(0.4)
+          Text('购物车空空如也').fontSize(14).fontColor('#999')
+          Text('快去挑选心仪的闲置好物吧').fontSize(12).fontColor('#ccc')
+        }
+        .width('100%')
+        .layoutWeight(1)
+        .justifyContent(FlexAlign.Center)
+      } else {
+        Refresh({ refreshing: $$this.isRefreshing }) {
+          Scroll() {
+            Column({ space: 10 }) {
+              ForEach(this.cartList, (item: CartItemModel) => {
+                this.buildCartItem(item)
+              }, (item: CartItemModel) => item.id.toString())
+            }
+            .width('100%')
+            .padding(12)
+          }
+          .layoutWeight(1)
+          .scrollBar(BarState.Off)
+          .backgroundColor('#f5f5f5')
+        }
+        .layoutWeight(1)
+        .onRefreshing(() => { this.refreshCart() })
       }
-      .layoutWeight(1)
-      .scrollBar(BarState.Off)
-      .backgroundColor('#f5f5f5')
 
-      if (this.cartList.length > 0) {
+      if (this.isLoggedIn && this.cartList.length > 0) {
         Row() {
           Checkbox({ name: 'selectAll' })
             .select(this.isAllSelected())
@@ -300,10 +275,7 @@ export struct CartTab {
               .fontColor('#fff')
               .borderRadius(20)
               .enabled(this.getSelectedCount() > 0)
-              .onClick(() => {
-                this.cartList = this.cartList.filter(i => !i.selected)
-                promptAction.showToast({ message: '已删除选中商品' })
-              })
+              .onClick(() => { this.deleteSelected() })
           } else {
             Text('合计: ¥' + this.getTotalPrice().toFixed(2))
               .fontSize(16)

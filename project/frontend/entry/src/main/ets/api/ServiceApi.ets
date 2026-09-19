@@ -41,7 +41,7 @@ class CancelBody {
 export class ServiceApi {
   /** 服务项目列表 */
   static async list(): Promise<ServiceItemModel[]> {
-    const json = await HttpUtil.getWithAuth('/service/list')
+    const json = await HttpUtil.get('/service/list')
     const result = parseJson(json) as ServiceListResult
     if (result.code !== 200) {
       return []
@@ -51,7 +51,7 @@ export class ServiceApi {
 
   /** 服务详情 */
   static async detail(id: number): Promise<ServiceItemModel | null> {
-    const json = await HttpUtil.getWithAuth('/service/detail?id=' + id)
+    const json = await HttpUtil.get('/service/detail?id=' + id)
     const result = parseJson(json) as ServiceDetailResult
     if (result.code !== 200) {
       return null

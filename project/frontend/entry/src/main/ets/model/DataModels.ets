@@ -40,6 +40,7 @@ export interface ApiResponse<T> {
 
 // ------------------ 购物车条目 ------------------
 export interface CartItemModel {
+  id: number
   goodsId: number
   name: string
   price: number
@@ -126,6 +127,7 @@ export interface ServiceItemModel {
 export interface ServiceOrderModel {
   id: number
   serviceId: number
+  serviceCode: string
   serviceName: string
   serviceIcon: string
   contactName: string
@@ -135,4 +137,34 @@ export interface ServiceOrderModel {
   remark: string
   status: string
   createTime: string
+}
+
+// ------------------ 商品分类（二手交易） ------------------
+export interface CategoryItemModel {
+  id: number
+  code: string
+  name: string
+  icon: string
+}
+
+// ------------------ 商品（二手交易） ------------------
+export interface GoodsItemModel {
+  id: number
+  name: string
+  price: number
+  image: string
+  quality: string
+  categoryId: number
+  description?: string
+}
+
+// ------------------ 后端订单 ------------------
+export interface TradeOrderModel {
+  id: number
+  orderNo: string
+  totalPrice: number
+  status: string
+  payMethod: string
+  createTime: string
+  items: OrderGoodsItem[]
 }

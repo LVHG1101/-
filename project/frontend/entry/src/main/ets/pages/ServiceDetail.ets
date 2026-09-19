@@ -47,6 +47,16 @@ struct ServiceDetail {
     }
   }
 
+  iconFor(code: string): string {
+    if (code === 'recycle') return '♻️'
+    if (code === 'authenticate') return '🔍'
+    if (code === 'repair') return '🔧'
+    if (code === 'clean') return '🧼'
+    if (code === 'rent') return '📦'
+    if (code === 'errand') return '🛵'
+    return '🔧'
+  }
+
   async submit() {
     if (!this.contactName.trim()) {
       promptAction.showToast({ message: '请填写联系人' })
@@ -100,7 +110,7 @@ struct ServiceDetail {
           // 服务信息
           Column({ space: 6 }) {
             Row({ space: 12 }) {
-              Text(this.service.icon).fontSize(40)
+              Text(this.iconFor(this.service.code)).fontSize(40)
               Column({ space: 4 }) {
                 Text(this.service.name).fontSize(17).fontWeight(FontWeight.Bold).fontColor('#333')
                 Text(this.service.description)
@@ -111,7 +121,7 @@ struct ServiceDetail {
                 if (this.service.price > 0) {
                   Text('参考价 ¥' + this.service.price.toFixed(2) + ' 起')
                     .fontSize(12)
-                    .fontColor('#e0620d')
+                    .fontColor('#1A5FD6')
                 }
               }
               .alignItems(HorizontalAlign.Start)
@@ -129,7 +139,7 @@ struct ServiceDetail {
             Row() {
               Text('预约时间').fontSize(15).fontWeight(FontWeight.Medium).fontColor('#333')
               Blank()
-              Text(`${this.dateStr} ${this.timeStr}`).fontSize(14).fontColor('#e0620d')
+              Text(`${this.dateStr} ${this.timeStr}`).fontSize(14).fontColor('#1A5FD6')
             }
             .width('100%')
 
@@ -180,7 +190,7 @@ struct ServiceDetail {
             .width('100%')
             .height(46)
             .fontColor('#fff')
-            .backgroundColor('#e0620d')
+            .backgroundColor('#1A5FD6')
             .borderRadius(23)
             .enabled(!this.isLoading)
             .margin({ top: 4, bottom: 30 })

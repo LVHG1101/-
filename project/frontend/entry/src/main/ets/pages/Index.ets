@@ -1,5 +1,6 @@
 import { buildHomeTab } from '../tabs/HomeTab'
 import { buildCategoryTab } from '../tabs/CategoryTab'
+import { buildPublishTab } from '../tabs/PublishTab'
 import { buildServiceTab } from '../tabs/ServiceTab'
 import { buildCartTab } from '../tabs/CartTab'
 import { buildMyTab } from '../tabs/my/MyTab'
@@ -7,7 +8,7 @@ import { buildMyTab } from '../tabs/my/MyTab'
 @Entry
 @Component
 struct Index {
-  @State currTabIndex: number = 0;
+  @StorageLink('currTabIndex') currTabIndex: number = 0;
   @Provide
   private navPathStack: NavPathStack = new NavPathStack();
 
@@ -37,16 +38,20 @@ struct Index {
         }.tabBar(this.buildTabBar($r('app.string.tab_bar_category'), 1))
 
         TabContent() {
+          buildPublishTab()
+        }.tabBar(this.buildTabBar($r('app.string.tab_bar_publish'), 2))
+
+        TabContent() {
           buildServiceTab()
-        }.tabBar(this.buildTabBar($r('app.string.tab_bar_service'), 2))
+        }.tabBar(this.buildTabBar($r('app.string.tab_bar_service'), 3))
 
         TabContent() {
           buildCartTab()
-        }.tabBar(this.buildTabBar($r('app.string.tab_bar_cart'), 3))
+        }.tabBar(this.buildTabBar($r('app.string.tab_bar_cart'), 4))
 
         TabContent() {
           buildMyTab()
-        }.tabBar(this.buildTabBar($r('app.string.tab_bar_my'), 4))
+        }.tabBar(this.buildTabBar($r('app.string.tab_bar_my'), 5))
       }
       .width('100%')
       .height('100%')
