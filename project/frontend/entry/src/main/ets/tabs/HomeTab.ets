@@ -88,23 +88,9 @@ export struct HomeTab {
     { name: '跑腿', icon: null, emoji: '🏃' },
   ]
 
-  @State exchangeList: ExchangeGoods[] = [
-    { id: 1, name: 'iPhone 13 128G', wantName: 'iPad 或平板', image: $r('app.media.phone2'), owner: '小杨', location: '同城' },
-    { id: 2, name: 'AirPods Pro 2', wantName: '蓝牙音箱', image: $r('app.media.hairphone'), owner: '阿凯', location: '附近 2km' },
-    { id: 3, name: '机械键盘', wantName: '游戏鼠标', image: $r('app.media.computer'), owner: '大壮', location: '同城' },
-    { id: 4, name: 'Apple Watch S8', wantName: '运动耳机', image: $r('app.media.watch'), owner: '小雨', location: '附近 3km' },
-    { id: 5, name: 'iPad Air 5', wantName: '轻薄笔记本', image: $r('app.media.pad'), owner: '阿哲', location: '同城' },
-    { id: 6, name: '小米电视 55寸', wantName: '投影仪', image: $r('app.media.tv'), owner: '老周', location: '自提' },
-  ]
+  @State exchangeList: ExchangeGoods[] = []
 
-  @State auctionList: AuctionGoods[] = [
-    { id: 1, name: '典藏版游戏机', image: $r('app.media.phone1'), startPrice: 500, currentPrice: 1280, bidCount: 23, endTime: '还剩 2小时' },
-    { id: 2, name: '复古胶片相机', image: $r('app.media.phone3'), startPrice: 800, currentPrice: 2100, bidCount: 31, endTime: '还剩 45分钟' },
-    { id: 3, name: '机械键盘', image: $r('app.media.computer'), startPrice: 100, currentPrice: 350, bidCount: 12, endTime: '还剩 5分钟' },
-    { id: 4, name: '限量手办', image: $r('app.media.phone4'), startPrice: 200, currentPrice: 520, bidCount: 18, endTime: '还剩 1天' },
-    { id: 5, name: '二手镜头', image: $r('app.media.phone5'), startPrice: 900, currentPrice: 1650, bidCount: 15, endTime: '还剩 3小时' },
-    { id: 6, name: '收藏球鞋', image: $r('app.media.phone6'), startPrice: 300, currentPrice: 680, bidCount: 27, endTime: '还剩 8小时' },
-  ]
+  @State auctionList: AuctionGoods[] = []
 
   aboutToAppear(): void {
     this.loadNearbyGoods()
@@ -241,7 +227,7 @@ export struct HomeTab {
       .padding({ left: 14, right: 6 })
       .backgroundColor('#fff')
       .borderRadius(19)
-      .onClick(() => { promptAction.showToast({ message: '搜索功能开发中' }) })
+      .onClick(() => { router.pushUrl({ url: 'pages/SearchPage' }) })
     }
     .width('100%')
     .padding({ left: 16, right: 16, top: 16, bottom: 14 })
@@ -430,56 +416,75 @@ export struct HomeTab {
       .padding(16)
       .linearGradient({ angle: 135, colors: [['#6EA8FF', 0.0], ['#1A5FD6', 1.0]] })
 
-      Scroll() {
-        Column({ space: 12 }) {
-          ForEach(this.exchangeList, (item: ExchangeGoods) => {
-            Row({ space: 12 }) {
-              Image(item.image)
-                .width(72)
-                .height(72)
-                .objectFit(ImageFit.Contain)
-                .backgroundColor('#F5F5F5')
-                .borderRadius(8)
-              Column({ space: 4 }) {
-                Text('换出：' + item.name)
-                  .fontSize(14)
-                  .fontColor('#333')
-                  .maxLines(1)
-                  .textOverflow({ overflow: TextOverflow.Ellipsis })
-                  .width('100%')
-                Text('想换：' + item.wantName)
-                  .fontSize(12)
-                  .fontColor('#1A5FD6')
-                  .width('100%')
-                Text(item.owner + ' · ' + item.location)
-                  .fontSize(11)
-                  .fontColor('#999')
-                  .width('100%')
-              }
-              .layoutWeight(1)
-              .alignItems(HorizontalAlign.Start)
-
-              Button('换一换')
-                .fontSize(12)
-                .height(30)
-                .fontColor('#fff')
-                .backgroundColor('#1A5FD6')
-                .borderRadius(15)
-                .onClick(() => { promptAction.showToast({ message: '换物功能开发中' }) })
-            }
-            .width('100%')
-            .padding(12)
-            .backgroundColor('#fff')
-            .borderRadius(10)
-            .onClick(() => { promptAction.showToast({ message: '换物详情开发中' }) })
-          }, (item: ExchangeGoods) => item.id.toString())
+      if (this.exchangeList.length === 0) {
+        Column({ space: 14 }) {
+          Text('🔄').fontSize(48)
+          Text('暂无换物信息').fontSize(14).fontColor('#999')
+          Button('去发布换物')
+            .fontSize(13)
+            .height(36)
+            .fontColor('#fff')
+            .backgroundColor('#1A5FD6')
+            .borderRadius(18)
+            .padding({ left: 20, right: 20 })
+            .onClick(() => { router.pushUrl({ url: 'pages/Exchange' }) })
         }
         .width('100%')
-        .padding(12)
+        .layoutWeight(1)
+        .justifyContent(FlexAlign.Center)
+        .backgroundColor('#f5f5f5')
+      } else {
+        Scroll() {
+          Column({ space: 12 }) {
+            ForEach(this.exchangeList, (item: ExchangeGoods) => {
+              Row({ space: 12 }) {
+                Image(item.image)
+                  .width(72)
+                  .height(72)
+                  .objectFit(ImageFit.Contain)
+                  .backgroundColor('#F5F5F5')
+                  .borderRadius(8)
+                Column({ space: 4 }) {
+                  Text('换出：' + item.name)
+                    .fontSize(14)
+                    .fontColor('#333')
+                    .maxLines(1)
+                    .textOverflow({ overflow: TextOverflow.Ellipsis })
+                    .width('100%')
+                  Text('想换：' + item.wantName)
+                    .fontSize(12)
+                    .fontColor('#1A5FD6')
+                    .width('100%')
+                  Text(item.owner + ' · ' + item.location)
+                    .fontSize(11)
+                    .fontColor('#999')
+                    .width('100%')
+                }
+                .layoutWeight(1)
+                .alignItems(HorizontalAlign.Start)
+
+                Button('换一换')
+                  .fontSize(12)
+                  .height(30)
+                  .fontColor('#fff')
+                  .backgroundColor('#1A5FD6')
+                  .borderRadius(15)
+                  .onClick(() => { router.pushUrl({ url: 'pages/Exchange' }) })
+              }
+              .width('100%')
+              .padding(12)
+              .backgroundColor('#fff')
+              .borderRadius(10)
+              .onClick(() => { router.pushUrl({ url: 'pages/Exchange' }) })
+            }, (item: ExchangeGoods) => item.id.toString())
+          }
+          .width('100%')
+          .padding(12)
+        }
+        .layoutWeight(1)
+        .scrollBar(BarState.Off)
+        .backgroundColor('#f5f5f5')
       }
-      .layoutWeight(1)
-      .scrollBar(BarState.Off)
-      .backgroundColor('#f5f5f5')
     }
     .width('100%')
     .height('100%')
@@ -503,72 +508,91 @@ export struct HomeTab {
       .padding(16)
       .linearGradient({ angle: 135, colors: [['#6EA8FF', 0.0], ['#1A5FD6', 1.0]] })
 
-      Scroll() {
-        Column({ space: 12 }) {
-          ForEach(this.auctionList, (item: AuctionGoods) => {
-            Column({ space: 8 }) {
-              Row({ space: 12 }) {
-                Image(item.image)
-                  .width(80)
-                  .height(80)
-                  .objectFit(ImageFit.Contain)
-                  .backgroundColor('#F5F5F5')
-                  .borderRadius(8)
-                Column({ space: 4 }) {
-                  Text(item.name)
-                    .fontSize(15)
-                    .fontWeight(FontWeight.Medium)
-                    .fontColor('#333')
-                    .maxLines(1)
-                    .textOverflow({ overflow: TextOverflow.Ellipsis })
-                    .width('100%')
-                  Row() {
-                    Text('当前价 ')
-                      .fontSize(12)
-                      .fontColor('#999')
-                    Text('¥' + item.currentPrice)
-                      .fontSize(18)
-                      .fontWeight(FontWeight.Bold)
-                      .fontColor('#1A5FD6')
-                  }
-                  .width('100%')
-                  Text('起拍价 ¥' + item.startPrice + ' · ' + item.bidCount + ' 次出价')
-                    .fontSize(11)
-                    .fontColor('#999')
-                    .width('100%')
-                }
-                .layoutWeight(1)
-                .alignItems(HorizontalAlign.Start)
-
-                Column({ space: 4 }) {
-                  Text(item.endTime)
-                    .fontSize(11)
-                    .fontColor('#1A5FD6')
-                  Button('出价')
-                    .fontSize(12)
-                    .height(30)
-                    .fontColor('#fff')
-                    .backgroundColor('#1A5FD6')
-                    .borderRadius(15)
-                    .onClick(() => { promptAction.showToast({ message: '拍卖功能开发中' }) })
-                }
-                .alignItems(HorizontalAlign.End)
-              }
-              .width('100%')
-            }
-            .width('100%')
-            .padding(12)
-            .backgroundColor('#fff')
-            .borderRadius(10)
-            .onClick(() => { promptAction.showToast({ message: '拍卖详情开发中' }) })
-          }, (item: AuctionGoods) => item.id.toString())
+      if (this.auctionList.length === 0) {
+        Column({ space: 14 }) {
+          Text('🔨').fontSize(48)
+          Text('暂无拍卖中的商品').fontSize(14).fontColor('#999')
+          Button('去发布拍卖')
+            .fontSize(13)
+            .height(36)
+            .fontColor('#fff')
+            .backgroundColor('#1A5FD6')
+            .borderRadius(18)
+            .padding({ left: 20, right: 20 })
+            .onClick(() => { router.pushUrl({ url: 'pages/Auction' }) })
         }
         .width('100%')
-        .padding(12)
+        .layoutWeight(1)
+        .justifyContent(FlexAlign.Center)
+        .backgroundColor('#f5f5f5')
+      } else {
+        Scroll() {
+          Column({ space: 12 }) {
+            ForEach(this.auctionList, (item: AuctionGoods) => {
+              Column({ space: 8 }) {
+                Row({ space: 12 }) {
+                  Image(item.image)
+                    .width(80)
+                    .height(80)
+                    .objectFit(ImageFit.Contain)
+                    .backgroundColor('#F5F5F5')
+                    .borderRadius(8)
+                  Column({ space: 4 }) {
+                    Text(item.name)
+                      .fontSize(15)
+                      .fontWeight(FontWeight.Medium)
+                      .fontColor('#333')
+                      .maxLines(1)
+                      .textOverflow({ overflow: TextOverflow.Ellipsis })
+                      .width('100%')
+                    Row() {
+                      Text('当前价 ')
+                        .fontSize(12)
+                        .fontColor('#999')
+                      Text('¥' + item.currentPrice)
+                        .fontSize(18)
+                        .fontWeight(FontWeight.Bold)
+                        .fontColor('#1A5FD6')
+                    }
+                    .width('100%')
+                    Text('起拍价 ¥' + item.startPrice + ' · ' + item.bidCount + ' 次出价')
+                      .fontSize(11)
+                      .fontColor('#999')
+                      .width('100%')
+                  }
+                  .layoutWeight(1)
+                  .alignItems(HorizontalAlign.Start)
+
+                  Column({ space: 4 }) {
+                    Text(item.endTime)
+                      .fontSize(11)
+                      .fontColor('#1A5FD6')
+                    Button('出价')
+                      .fontSize(12)
+                      .height(30)
+                      .fontColor('#fff')
+                      .backgroundColor('#1A5FD6')
+                      .borderRadius(15)
+                      .onClick(() => { router.pushUrl({ url: 'pages/Auction' }) })
+                  }
+                  .alignItems(HorizontalAlign.End)
+                }
+                .width('100%')
+              }
+              .width('100%')
+              .padding(12)
+              .backgroundColor('#fff')
+              .borderRadius(10)
+              .onClick(() => { router.pushUrl({ url: 'pages/Auction' }) })
+            }, (item: AuctionGoods) => item.id.toString())
+          }
+          .width('100%')
+          .padding(12)
+        }
+        .layoutWeight(1)
+        .scrollBar(BarState.Off)
+        .backgroundColor('#f5f5f5')
       }
-      .layoutWeight(1)
-      .scrollBar(BarState.Off)
-      .backgroundColor('#f5f5f5')
     }
     .width('100%')
     .height('100%')

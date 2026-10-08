@@ -8,6 +8,12 @@ class GoodsDetailResult {
   data: GoodsItemModel = { id: 0, name: '', price: 0, image: '', quality: '', categoryId: 0 }
 }
 
+class GoodsListResult {
+  code: number = 0
+  message: string = ''
+  data: GoodsItemModel[] = []
+}
+
 class ApiResult {
   code: number = 0
   message: string = ''
@@ -31,6 +37,26 @@ export class GoodsApi {
       return null
     }
     return result.data
+  }
+
+  /** 商品搜索 */
+  static async search(keyword: string, categoryId: number, sortBy: string): Promise<GoodsItemModel[]> {
+    let path = '/goods/search?'
+    if (keyword) {
+      path += 'keyword=' + encodeURIComponent(keyword) + '&'
+    }
+    if (categoryId > 0) {
+      path += 'categoryId=' + categoryId + '&'
+    }
+    if (sortBy) {
+      path += 'sortBy=' + sortBy
+    }
+    const json = await HttpUtil.get(path)
+    const result = parseJson(json) as GoodsListResult
+    if (result.code !== 200) {
+      return []
+    }
+    return result.data ?? []
   }
 
   /** 发布商品 */

@@ -22,6 +22,7 @@
     "pages/AdminAfterSale",
     "pages/AdminService",
     "pages/AdminServiceOrder",
-    "pages/AdminUser"
+    "pages/AdminUser",
+    "pages/SearchPage"
   ]
 }

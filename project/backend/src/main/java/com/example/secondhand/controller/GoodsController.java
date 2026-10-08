@@ -53,6 +53,18 @@ public class GoodsController {
         return map;
     }
 
+    /** 商品搜索：关键词 + 分类 + 价格排序 */
+    @GetMapping("/search")
+    public Map<String, Object> search(@RequestParam(required = false) String keyword,
+                                      @RequestParam(required = false) Long categoryId,
+                                      @RequestParam(required = false) String sortBy) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("code", 200);
+        map.put("message", "查询成功");
+        map.put("data", categoryService.searchGoods(keyword, categoryId, sortBy));
+        return map;
+    }
+
     @PostMapping("/publish")
     public Map<String, Object> publish(@RequestBody Goods body) {
         Map<String, Object> map = new HashMap<>();

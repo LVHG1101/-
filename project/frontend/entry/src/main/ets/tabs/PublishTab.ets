@@ -5,6 +5,7 @@ import { fileIo as fs } from '@kit.CoreFileKit'
 import { util } from '@kit.ArkTS'
 import { CategoryApi } from '../api/CategoryApi'
 import { GoodsApi } from '../api/GoodsApi'
+import { AiApi } from '../api/AiApi'
 import { HttpUtil } from '../common/HttpUtil'
 import { parseJson } from '../common/JsonHelper.js'
 import { CategoryItemModel } from '../model/DataModels'
@@ -35,6 +36,8 @@ export struct PublishTab {
   @State isSubmitting: boolean = false
   @State previewUri: string = ''
   @State uploadedImage: string = ''
+  @State aiLoading: boolean = false
+  @State aiAnalysis: string = ''
 
   private qualities: string[] = ['全新', '几乎全新', '轻微使用痕迹', '明显使用痕迹', '严重使用痕迹']
 
@@ -155,6 +158,37 @@ export struct PublishTab {
     }
   }
 
+  async aiAppraise() {
+    if (!this.name.trim()) {
+      promptAction.showToast({ message: '请先填写商品名称' })
+      return
+    }
+    this.aiLoading = true
+    this.aiAnalysis = ''
+    try {
+      const result = await AiApi.appraise(this.name.trim(), this.description.trim(), this.qualities[this.qualityIndex])
+      if (result) {
+        if (result.title) {
+          this.name = result.title
+        }
+        if (result.price > 0) {
+          this.price = String(Math.round(result.price))
+        }
+        if (result.description) {
+          this.description = result.description
+        }
+        this.aiAnalysis = result.analysis || result.priceRange
+        promptAction.showToast({ message: 'AI 估价完成' })
+      } else {
+        promptAction.showToast({ message: 'AI 服务调用失败' })
+      }
+    } catch (e) {
+      promptAction.showToast({ message: 'AI 服务调用失败' })
+    } finally {
+      this.aiLoading = false
+    }
+  }
+
   build() {
     Column() {
       Row() {
@@ -162,6 +196,16 @@ export struct PublishTab {
           .fontSize(20)
           .fontWeight(FontWeight.Bold)
           .fontColor('#333')
+        Blank()
+        Button(this.aiLoading ? '估价中...' : '🤖 AI 智能估价')
+          .fontSize(13)
+          .height(32)
+          .fontColor('#1A5FD6')
+          .backgroundColor('#EAF1FF')
+          .borderRadius(16)
+          .padding({ left: 12, right: 12 })
+          .enabled(!this.aiLoading)
+          .onClick(() => { this.aiAppraise() })
       }
       .width('100%')
       .padding({ left: 16, right: 16, top: 16, bottom: 14 })
@@ -169,6 +213,31 @@ export struct PublishTab {
 
       Scroll() {
         Column({ space: 12 }) {
+          if (this.aiAnalysis) {
+            Column({ space: 6 }) {
+              Row() {
+                Text('🤖 AI 建议')
+                  .fontSize(14)
+                  .fontWeight(FontWeight.Bold)
+                  .fontColor('#1A5FD6')
+                Blank()
+                Text('已自动填充')
+                  .fontSize(11)
+                  .fontColor('#999')
+              }
+              .width('100%')
+              Text(this.aiAnalysis)
+                .fontSize(13)
+                .fontColor('#333')
+                .lineHeight(20)
+                .width('100%')
+            }
+            .width('100%')
+            .padding(14)
+            .backgroundColor('#EAF1FF')
+            .borderRadius(10)
+          }
+
           Column({ space: 6 }) {
             Text('商品名称').fontSize(14).fontColor('#333').width('100%')
             TextInput({ placeholder: '请输入商品名称' })

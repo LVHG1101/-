@@ -11,6 +11,8 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -103,6 +105,32 @@ public class CategoryService {
                 .orElseThrow(() -> new IllegalArgumentException("商品不存在"));
         fillSeller(goods);
         return goods;
+    }
+
+    /** 商品搜索：关键词 + 分类筛选 + 价格排序 */
+    public List<Goods> searchGoods(String keyword, Long categoryId, String sortBy) {
+        String kw = keyword == null ? "" : keyword.trim();
+        boolean hasKeyword = !kw.isEmpty();
+        List<Goods> list;
+        if (hasKeyword && categoryId != null) {
+            list = goodsRepository.findByNameContainingAndEnabledTrueAndCategoryIdOrderByIdDesc(kw, categoryId);
+        } else if (hasKeyword) {
+            list = goodsRepository.findByNameContainingAndEnabledTrueOrderByIdDesc(kw);
+        } else if (categoryId != null) {
+            list = goodsRepository.findByEnabledTrueAndCategoryIdOrderByIdAsc(categoryId);
+        } else {
+            list = goodsRepository.findByEnabledTrueOrderByIdAsc();
+        }
+        if ("price_asc".equals(sortBy) || "price_desc".equals(sortBy)) {
+            list = new ArrayList<>(list);
+            list.sort("price_asc".equals(sortBy)
+                    ? Comparator.comparing(Goods::getPrice)
+                    : Comparator.comparing(Goods::getPrice).reversed());
+        }
+        for (Goods goods : list) {
+            fillSeller(goods);
+        }
+        return list;
     }
 
     /** 发布商品，记录卖家以便做信誉约束 */

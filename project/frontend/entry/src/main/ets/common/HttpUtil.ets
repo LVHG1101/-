@@ -34,6 +34,22 @@ export class HttpUtil {
     }
   }
 
+  static async postLong(path: string, body: object): Promise<string> {
+    const req = http.createHttp()
+    try {
+      const resp = await req.request(ApiConfig.BASE_URL + path, {
+        method: http.RequestMethod.POST,
+        header: { 'Content-Type': 'application/json' },
+        extraData: JSON.stringify(body),
+        connectTimeout: 10000,
+        readTimeout: 60000
+      })
+      return resp.result as string
+    } finally {
+      req.destroy()
+    }
+  }
+
   static async getWithAuth(path: string): Promise<string> {
     const token = await UserStore.getToken()
     const req = http.createHttp()

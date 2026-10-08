@@ -10,4 +10,6 @@ import java.util.List;
 public interface GoodsRepository extends JpaRepository<Goods, Long> {
     List<Goods> findByEnabledTrueAndCategoryIdOrderByIdAsc(Long categoryId);
     List<Goods> findByEnabledTrueOrderByIdAsc();
+    List<Goods> findByNameContainingAndEnabledTrueOrderByIdDesc(String keyword);
+    List<Goods> findByNameContainingAndEnabledTrueAndCategoryIdOrderByIdDesc(String keyword, Long categoryId);
 }

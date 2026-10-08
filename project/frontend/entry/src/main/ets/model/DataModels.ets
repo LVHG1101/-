@@ -174,6 +174,50 @@ export interface TradeOrderModel {
   items: OrderGoodsItem[]
 }
 
+// ------------------ 拍卖商品 ------------------
+export interface AuctionGoodsModel {
+  id: number
+  name: string
+  image: string
+  startPrice: number
+  currentPrice: number
+  bidCount: number
+  endTime: number
+  status: string
+  userId?: number
+}
+
+// ------------------ 出价记录 ------------------
+export interface AuctionBidModel {
+  id: number
+  auctionId: number
+  userId: number
+  price: number
+  createTime: string
+}
+
+// ------------------ 换物商品 ------------------
+export interface ExchangeGoodsModel {
+  id: number
+  name: string
+  wantName: string
+  image: string
+  owner: string
+  location: string
+  status: string
+  userId?: number
+}
+
+// ------------------ 换物申请 ------------------
+export interface ExchangeApplyModel {
+  id: number
+  exchangeId: number
+  userId: number
+  message: string
+  createTime: string
+  status: string
+}
+
 // ------------------ 售后申请 ------------------
 export interface AfterSaleModel {
   id: number

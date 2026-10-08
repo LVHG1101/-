@@ -49,7 +49,11 @@ public class SecurityConfiguration {
                         .requestMatchers("/user/register", "/user/login",
                                 "/service/list", "/service/detail",
                                 "/category/list", "/goods/list", "/goods/detail",
-                                "/upload/image").permitAll()
+                                "/goods/search",
+                                "/auction/list",
+                                "/exchange/list",
+                                "/upload/image",
+                                "/ai/appraise").permitAll()
                         // 管理端接口仅限 admin 角色；UserService 加载用户时会补上 ROLE_ 前缀
                         .requestMatchers("/admin/**").hasRole("admin")
                         .anyRequest().authenticated()
