@@ -2,6 +2,7 @@ import promptAction from '@ohos.promptAction'
 import { router } from '@kit.ArkUI'
 import { UserStore } from '../../common/UserStore'
 import { CreditApi } from '../../api/CreditApi'
+import { CarbonApi } from '../../api/CarbonApi'
 
 // Index.ets 里「我的」是第 6 个 Tab（下标 5）。若组员调整了 Tab 顺序，这个常量要跟着改
 const MY_TAB_INDEX: number = 5
@@ -19,6 +20,7 @@ struct MyTabContent {
   @State isAdmin: boolean = false
   @State creditScore: number = 100
   @State creditLevel: string = '优秀'
+  @State carbonPoints: number = 0
   // 登录页登录成功后 UserStore.notifyLoginStateChanged() 会让它自增，从而触发下面的刷新
   @StorageLink('loginTick') @Watch('onLoginTickChanged') loginTick: number = 0
   // 从子页面返回时由 Index.onPageShow 广播，用于刷新信誉分等可能已被别处改动的数据
@@ -60,10 +62,18 @@ struct MyTabContent {
         }
       } catch (e) {
       }
+      try {
+        const carbon = await CarbonApi.my()
+        if (carbon.code === 200) {
+          this.carbonPoints = carbon.balance
+        }
+      } catch (e) {
+      }
     } else {
       this.isAdmin = false
       this.creditScore = 100
       this.creditLevel = '优秀'
+      this.carbonPoints = 0
     }
   }
 
@@ -92,6 +102,22 @@ struct MyTabContent {
 
   goFootprint() {
     router.pushUrl({ url: 'pages/Footprint' })
+  }
+
+  showService() {
+    promptAction.showDialog({
+      title: '联系客服',
+      message: '客服电话：400-000-0000\n客服微信：secondhand_help\n服务时间：工作日 9:00 - 18:00',
+      buttons: [{ text: '知道了', color: '#1A5FD6' }]
+    })
+  }
+
+  showAbout() {
+    promptAction.showDialog({
+      title: '关于我们',
+      message: '二手集市 V1.0\n软工二班第 11 组\n让闲置物品循环起来，践行低碳环保生活。',
+      buttons: [{ text: '知道了', color: '#1A5FD6' }]
+    })
   }
 
   build() {
@@ -141,7 +167,7 @@ struct MyTabContent {
               .height(20)
               .fillColor('#fff')
               .onClick(() => {
-                promptAction.showToast({ message: '功能开发中' })
+                AppStorage.setOrCreate('currTabIndex', 4)
               })
           }
           .width('100%')
@@ -151,7 +177,7 @@ struct MyTabContent {
             // 这里必须内联渲染：@Builder 按值传参时不会随状态变化重建，
             // 之前用 this.StatItem(this.creditScore...) 会导致分数一直停在首次渲染的值
             Column({ space: 4 }) {
-              Text('0')
+              Text(this.carbonPoints.toString())
                 .fontSize(18)
                 .fontWeight(FontWeight.Bold)
                 .fontColor('#fff')
@@ -293,8 +319,8 @@ struct MyTabContent {
             .width('100%')
 
             Column({ space: 2 }) {
-              Text('[附近] 距您1.5km').fontSize(11).fontColor('#e0620d')
-              Text('查看附近交易地址').fontSize(10).fontColor('#999')
+              Text('收货地址').fontSize(11).fontColor('#e0620d')
+              Text('管理我的收货地址').fontSize(10).fontColor('#999')
             }
             .alignItems(HorizontalAlign.Start)
             .width('100%')
@@ -327,7 +353,7 @@ struct MyTabContent {
           Divider().color('#F0F0F0').margin({ left: 16 })
           this.MenuRow('我的信用', 'pages/Credit')
           Divider().color('#F0F0F0').margin({ left: 16 })
-          this.MenuRow('售后服务', '')
+          this.MenuRow('售后服务', 'pages/OrderList', 'AFTER_SALE')
           Divider().color('#F0F0F0').margin({ left: 16 })
           this.MenuRow('联系客服', '')
           Divider().color('#F0F0F0').margin({ left: 16 })
@@ -378,7 +404,7 @@ struct MyTabContent {
   }
 
   @Builder
-  MenuRow(title: string, url: string) {
+  MenuRow(title: string, url: string, mode: string = '') {
     Row() {
       Text(title)
         .fontSize(15)
@@ -392,7 +418,15 @@ struct MyTabContent {
     .padding({ left: 16, right: 16, top: 14, bottom: 14 })
     .onClick(() => {
       if (url.length > 0) {
-        router.pushUrl({ url: url })
+        if (mode.length > 0) {
+          router.pushUrl({ url: url, params: { mode: mode } })
+        } else {
+          router.pushUrl({ url: url })
+        }
+      } else if (title === '联系客服') {
+        this.showService()
+      } else if (title === '关于我们') {
+        this.showAbout()
       } else {
         promptAction.showToast({ message: '功能开发中' })
       }

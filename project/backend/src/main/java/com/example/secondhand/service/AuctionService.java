@@ -38,6 +38,9 @@ public class AuctionService {
         if (a.getStartPrice() == null || a.getStartPrice() <= 0) {
             throw new IllegalArgumentException("起拍价必须大于 0");
         }
+        if (a.getDescription() == null || a.getDescription().isBlank()) {
+            throw new IllegalArgumentException("请填写拍卖品描述");
+        }
         a.setId(null);
         a.setBidCount(0);
         a.setCurrentPrice(a.getStartPrice());

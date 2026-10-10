@@ -23,6 +23,7 @@
     "pages/AdminService",
     "pages/AdminServiceOrder",
     "pages/AdminUser",
+    "pages/AdminGoods",
     "pages/SearchPage"
   ]
 }

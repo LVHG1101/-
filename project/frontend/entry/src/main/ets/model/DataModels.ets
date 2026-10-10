@@ -156,6 +156,7 @@ export interface GoodsItemModel {
   quality: string
   categoryId: number
   description?: string
+  enabled?: boolean
   // 以下由后端附带，用于展示「低信誉卖家」标识
   userId?: number
   sellerName?: string
@@ -179,6 +180,7 @@ export interface AuctionGoodsModel {
   id: number
   name: string
   image: string
+  description?: string
   startPrice: number
   currentPrice: number
   bidCount: number
@@ -202,6 +204,7 @@ export interface ExchangeGoodsModel {
   name: string
   wantName: string
   image: string
+  description?: string
   owner: string
   location: string
   status: string

@@ -141,6 +141,69 @@ public class CategoryService {
         return goodsRepository.save(goods);
     }
 
+    /** 我发布的商品 */
+    public List<Goods> myGoods(Long userId) {
+        List<Goods> list = goodsRepository.findByUserIdOrderByIdDesc(userId);
+        for (Goods goods : list) {
+            fillSeller(goods);
+        }
+        return list;
+    }
+
+    /** 用户下架自己的商品 */
+    public void offlineGoods(Long userId, Long goodsId) {
+        Goods goods = goodsRepository.findById(goodsId)
+                .orElseThrow(() -> new IllegalArgumentException("商品不存在"));
+        if (goods.getUserId() == null || !goods.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("无权操作该商品");
+        }
+        goods.setEnabled(false);
+        goodsRepository.save(goods);
+    }
+
+    /** 用户重新上架自己的商品 */
+    public void onlineGoods(Long userId, Long goodsId) {
+        Goods goods = goodsRepository.findById(goodsId)
+                .orElseThrow(() -> new IllegalArgumentException("商品不存在"));
+        if (goods.getUserId() == null || !goods.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("无权操作该商品");
+        }
+        goods.setEnabled(true);
+        goodsRepository.save(goods);
+    }
+
+    /** 用户删除自己的商品 */
+    public void deleteGoods(Long userId, Long goodsId) {
+        Goods goods = goodsRepository.findById(goodsId)
+                .orElseThrow(() -> new IllegalArgumentException("商品不存在"));
+        if (goods.getUserId() == null || !goods.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("无权操作该商品");
+        }
+        goodsRepository.delete(goods);
+    }
+
+    /** 管理端：全部商品（含下架） */
+    public List<Goods> listAllGoods() {
+        List<Goods> list = goodsRepository.findAllByOrderByIdDesc();
+        for (Goods goods : list) {
+            fillSeller(goods);
+        }
+        return list;
+    }
+
+    /** 管理端：下架商品 */
+    public void adminOfflineGoods(Long goodsId) {
+        Goods goods = goodsRepository.findById(goodsId)
+                .orElseThrow(() -> new IllegalArgumentException("商品不存在"));
+        goods.setEnabled(false);
+        goodsRepository.save(goods);
+    }
+
+    /** 管理端：删除商品 */
+    public void adminDeleteGoods(Long goodsId) {
+        goodsRepository.deleteById(goodsId);
+    }
+
     /** 填充卖家信誉信息，供前端展示「低信誉卖家」标识 */
     private void fillSeller(Goods goods) {
         if (goods == null || goods.getUserId() == null) {

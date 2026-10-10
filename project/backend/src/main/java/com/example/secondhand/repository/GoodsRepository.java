@@ -12,4 +12,6 @@ public interface GoodsRepository extends JpaRepository<Goods, Long> {
     List<Goods> findByEnabledTrueOrderByIdAsc();
     List<Goods> findByNameContainingAndEnabledTrueOrderByIdDesc(String keyword);
     List<Goods> findByNameContainingAndEnabledTrueAndCategoryIdOrderByIdDesc(String keyword, Long categoryId);
+    List<Goods> findByUserIdOrderByIdDesc(Long userId);
+    List<Goods> findAllByOrderByIdDesc();
 }

@@ -30,6 +30,12 @@ public class User implements UserDetails {
 
     private Integer creditScore = 100; // 信誉分，0~100，低于 60 视为低信誉
 
+    private Integer carbonPoints = 0; // 碳积分
+
+    private String realName; // 实名认证：真实姓名
+    private String idCard; // 实名认证：身份证号
+    private Boolean verified = false; // 是否已实名认证
+
     private Boolean accountNonExpired = true; // 账号是否过期
     private Boolean accountNonLocked = true; // 账号是否被锁定
     private Boolean credentialsNonExpired = true; // 密码是否过期

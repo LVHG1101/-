@@ -77,6 +77,18 @@ struct AdminHome {
           // 卡片必须内联渲染：@Builder 按值传参不会随状态变化重建，角标会停在首次渲染的值
           Row() {
             Column({ space: 4 }) {
+              Text('商品审核').fontSize(16).fontWeight(FontWeight.Bold).fontColor('#333')
+              Text('查看全部商品，下架或删除违规商品').fontSize(12).fontColor('#999')
+            }
+            .alignItems(HorizontalAlign.Start)
+            .layoutWeight(1)
+            Text('›').fontSize(18).fontColor('#ccc').margin({ left: 8 })
+          }
+          .width('100%').padding(16).backgroundColor('#fff').borderRadius(10)
+          .onClick(() => { router.pushUrl({ url: 'pages/AdminGoods' }) })
+
+          Row() {
+            Column({ space: 4 }) {
               Text('售后管理').fontSize(16).fontWeight(FontWeight.Bold).fontColor('#333')
               Text('处理用户提交的退换/售后申请').fontSize(12).fontColor('#999')
             }

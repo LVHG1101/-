@@ -71,12 +71,11 @@ export struct CategoryTab {
     this.isRefreshing = false
   }
 
-  iconFor(code: string): string {
-    if (code === 'digital') return '📱'
-    if (code === 'appliance') return '📺'
-    if (code === 'home') return '🏠'
-    if (code === 'other') return '📦'
-    return '📦'
+  iconFor(code: string): Resource {
+    if (code === 'digital') return $r('app.media.shuma')
+    if (code === 'appliance') return $r('app.media.jiadian')
+    if (code === 'home') return $r('app.media.jiaju')
+    return $r('app.media.qita')
   }
 
   addToCart(item: GoodsItemModel) {
@@ -99,7 +98,7 @@ export struct CategoryTab {
         ForEach(this.categories, (item: CategoryItemModel, index: number) => {
           ListItem() {
             Column({ space: 6 }) {
-              Text(this.iconFor(item.code)).fontSize(22)
+              Image(this.iconFor(item.code)).width(22).height(22)
               Text(item.name)
                 .fontSize(13)
                 .fontWeight(this.currentIndex === index ? FontWeight.Bold : FontWeight.Normal)
@@ -121,11 +120,13 @@ export struct CategoryTab {
 
       Column() {
         Row() {
-          Text(this.iconFor(this.categories.length > 0 ? this.categories[this.currentIndex].code : '') + ' ' +
-            (this.categories.length > 0 ? this.categories[this.currentIndex].name : ''))
+          Image(this.iconFor(this.categories.length > 0 ? this.categories[this.currentIndex].code : ''))
+            .width(20).height(20)
+          Text(this.categories.length > 0 ? this.categories[this.currentIndex].name : '')
             .fontSize(18)
             .fontWeight(FontWeight.Bold)
             .fontColor('#333')
+            .margin({ left: 6 })
           Blank()
           Text('共' + this.goods.length + '件')
             .fontSize(12)

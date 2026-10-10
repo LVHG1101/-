@@ -29,6 +29,15 @@ public class ExchangeService {
     }
 
     public ExchangeGoods publish(ExchangeGoods e, Long userId) {
+        if (e.getName() == null || e.getName().isBlank()) {
+            throw new IllegalArgumentException("换出物品名称不能为空");
+        }
+        if (e.getWantName() == null || e.getWantName().isBlank()) {
+            throw new IllegalArgumentException("想换物品不能为空");
+        }
+        if (e.getDescription() == null || e.getDescription().isBlank()) {
+            throw new IllegalArgumentException("请填写换物描述");
+        }
         e.setId(null);
         e.setStatus("ONGOING");
         e.setUserId(userId);

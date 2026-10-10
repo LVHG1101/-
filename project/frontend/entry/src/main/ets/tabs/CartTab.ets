@@ -63,7 +63,11 @@ export struct CartTab {
   }
 
   async changeCount(item: CartItemModel, delta: number) {
-    const count = Math.max(1, item.count + delta)
+    const count = item.count + delta
+    if (count < 1) {
+      await this.removeItem(item)
+      return
+    }
     try {
       await CartApi.update(item.id, count, item.selected)
       this.loadCart()
@@ -123,6 +127,10 @@ export struct CartTab {
 
   getSelectedCount(): number {
     return this.cartList.filter(i => i.selected).length
+  }
+
+  getTotalCount(): number {
+    return this.cartList.filter(i => i.selected).reduce((sum, i) => sum + i.count, 0)
   }
 
   getTotalPrice(): number {
@@ -302,7 +310,7 @@ export struct CartTab {
               .fontWeight(FontWeight.Bold)
               .margin({ right: 12 })
 
-            Button('结算(' + this.getSelectedCount() + ')')
+            Button('结算(' + this.getTotalCount() + ')')
               .width(110)
               .height(42)
               .backgroundColor(this.getSelectedCount() > 0 ? '#1A5FD6' : '#ccc')

@@ -32,6 +32,7 @@ class BidBody {
 class PublishBody {
   name: string = ''
   image: string = ''
+  description: string = ''
   startPrice: number = 0
   endTime: number = 0
 }
@@ -48,10 +49,11 @@ export class AuctionApi {
   }
 
   /** 发布拍卖 */
-  static async publish(name: string, image: string, startPrice: number, endTime: number): Promise<ApiResult> {
+  static async publish(name: string, image: string, description: string, startPrice: number, endTime: number): Promise<ApiResult> {
     const body = new PublishBody()
     body.name = name
     body.image = image
+    body.description = description
     body.startPrice = startPrice
     body.endTime = endTime
     const json = await HttpUtil.postWithAuth('/auction/publish', body)

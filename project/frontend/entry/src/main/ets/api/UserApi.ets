@@ -15,6 +15,23 @@ export class ApiResult {
   message: string = ''
 }
 
+export class ProfileModel {
+  username: string = ''
+  nickname: string = ''
+  role: string = 'user'
+  creditScore: number = 100
+  creditLevel: string = ''
+  verified: boolean = false
+  realName: string = ''
+  idCard: string = ''
+}
+
+class ProfileResult {
+  code: number = 0
+  message: string = ''
+  data: ProfileModel = new ProfileModel()
+}
+
 class LoginBody {
   username: string = ''
   password: string = ''
@@ -24,6 +41,11 @@ class RegisterBody {
   username: string = ''
   password: string = ''
   nickname: string = ''
+}
+
+class RealNameBody {
+  realName: string = ''
+  idCard: string = ''
 }
 
 export class UserApi {
@@ -42,5 +64,22 @@ export class UserApi {
     body.password = password
     const json = await HttpUtil.post('/user/login', body)
     return parseJson(json) as LoginResult
+  }
+
+  static async info(): Promise<ProfileModel | null> {
+    const json = await HttpUtil.getWithAuth('/user/info')
+    const result = parseJson(json) as ProfileResult
+    if (result.code !== 200) {
+      return null
+    }
+    return result.data ?? null
+  }
+
+  static async realName(realName: string, idCard: string): Promise<ApiResult> {
+    const body = new RealNameBody()
+    body.realName = realName
+    body.idCard = idCard
+    const json = await HttpUtil.postWithAuth('/user/realname', body)
+    return parseJson(json) as ApiResult
   }
 }

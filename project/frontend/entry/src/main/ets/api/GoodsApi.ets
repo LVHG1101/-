@@ -28,6 +28,10 @@ class PublishBody {
   categoryId: number = 0
 }
 
+class GoodsIdBody {
+  goodsId: number = 0
+}
+
 export class GoodsApi {
   /** 商品详情 */
   static async detail(id: number): Promise<GoodsItemModel | null> {
@@ -70,6 +74,40 @@ export class GoodsApi {
     body.description = description
     body.categoryId = categoryId
     const json = await HttpUtil.postWithAuth('/goods/publish', body)
+    return parseJson(json) as ApiResult
+  }
+
+  /** 我发布的商品 */
+  static async mine(): Promise<GoodsItemModel[]> {
+    const json = await HttpUtil.getWithAuth('/goods/mine')
+    const result = parseJson(json) as GoodsListResult
+    if (result.code !== 200) {
+      return []
+    }
+    return result.data ?? []
+  }
+
+  /** 下架商品 */
+  static async offline(goodsId: number): Promise<ApiResult> {
+    const body = new GoodsIdBody()
+    body.goodsId = goodsId
+    const json = await HttpUtil.postWithAuth('/goods/offline', body)
+    return parseJson(json) as ApiResult
+  }
+
+  /** 重新上架商品 */
+  static async online(goodsId: number): Promise<ApiResult> {
+    const body = new GoodsIdBody()
+    body.goodsId = goodsId
+    const json = await HttpUtil.postWithAuth('/goods/online', body)
+    return parseJson(json) as ApiResult
+  }
+
+  /** 删除商品 */
+  static async delete(goodsId: number): Promise<ApiResult> {
+    const body = new GoodsIdBody()
+    body.goodsId = goodsId
+    const json = await HttpUtil.postWithAuth('/goods/delete', body)
     return parseJson(json) as ApiResult
   }
 }

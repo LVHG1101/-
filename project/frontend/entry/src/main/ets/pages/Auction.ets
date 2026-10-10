@@ -1,9 +1,25 @@
 import { router } from '@kit.ArkUI'
 import promptAction from '@ohos.promptAction'
+import { photoAccessHelper } from '@kit.MediaLibraryKit'
+import { cameraPicker, camera } from '@kit.CameraKit'
+import { fileIo as fs } from '@kit.CoreFileKit'
+import { util } from '@kit.ArkTS'
 import { AuctionApi } from '../api/AuctionApi'
 import { AuctionGoodsModel } from '../model/DataModels'
 import { imageResource } from '../common/ImageUtil'
 import { UserStore } from '../common/UserStore'
+import { HttpUtil } from '../common/HttpUtil'
+import { parseJson } from '../common/JsonHelper.js'
+
+class UploadResult {
+  code: number = 0
+  message: string = ''
+  data: string = ''
+}
+
+class UploadBody {
+  base64: string = ''
+}
 
 @CustomDialog
 struct BidDialog {
@@ -18,7 +34,7 @@ struct BidDialog {
       Text('出价').fontSize(18).fontWeight(FontWeight.Bold).fontColor('#333')
       Text(this.auctionName).fontSize(14).fontColor('#333')
       Text('当前价 ¥' + this.currentPrice.toFixed(0)).fontSize(13).fontColor('#999')
-      TextInput({ placeholder: '请输入出价（元）' })
+      TextInput({ placeholder: '请输入出价（须高于当前价）' })
         .type(InputType.Number)
         .height(44)
         .fontSize(14)
@@ -55,10 +71,92 @@ struct BidDialog {
 @CustomDialog
 struct PublishAuctionDialog {
   controller?: CustomDialogController
-  onPublish: (name: string, startPrice: number, hours: number) => void = () => {}
+  onPublish: (name: string, image: string, description: string, startPrice: number, hours: number) => void = () => {}
   @State name: string = ''
+  @State description: string = ''
   @State startPrice: string = ''
   @State hours: number = 24
+  @State previewUri: string = ''
+  @State submitting: boolean = false
+
+  async takePhoto() {
+    try {
+      const profile: cameraPicker.PickerProfile = {
+        cameraPosition: camera.CameraPosition.CAMERA_POSITION_BACK
+      }
+      const result = await cameraPicker.pick(getContext(this), [cameraPicker.PickerMediaType.PHOTO], profile)
+      if (result.resultUri) {
+        this.previewUri = result.resultUri
+      }
+    } catch (e) {
+      promptAction.showToast({ message: '拍照失败' })
+    }
+  }
+
+  async selectFromAlbum() {
+    try {
+      const options = new photoAccessHelper.PhotoSelectOptions()
+      options.MIMEType = photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE
+      options.maxSelectNumber = 1
+      const picker = new photoAccessHelper.PhotoViewPicker()
+      const result = await picker.select(options)
+      if (result.photoUris.length > 0) {
+        this.previewUri = result.photoUris[0]
+      }
+    } catch (e) {
+      promptAction.showToast({ message: '选择图片失败' })
+    }
+  }
+
+  async uploadImage(): Promise<string> {
+    if (!this.previewUri) {
+      return 'phone1'
+    }
+    try {
+      const file = fs.openSync(this.previewUri, fs.OpenMode.READ_ONLY)
+      const stat = fs.statSync(this.previewUri)
+      const buf = new ArrayBuffer(stat.size)
+      fs.readSync(file.fd, buf)
+      fs.closeSync(file)
+      const helper = new util.Base64Helper()
+      const base64 = helper.encodeToStringSync(new Uint8Array(buf))
+      const body = new UploadBody()
+      body.base64 = base64
+      const json = await HttpUtil.post('/upload/image', body)
+      const result = parseJson(json) as UploadResult
+      if (result.code === 200) {
+        return result.data
+      }
+      return 'phone1'
+    } catch (e) {
+      return 'phone1'
+    }
+  }
+
+  async submit() {
+    if (!this.name.trim()) {
+      promptAction.showToast({ message: '请填写拍卖品名称' })
+      return
+    }
+    if (!this.previewUri) {
+      promptAction.showToast({ message: '请上传拍卖品图片' })
+      return
+    }
+    if (!this.description.trim()) {
+      promptAction.showToast({ message: '请填写拍卖品描述' })
+      return
+    }
+    const p = Number(this.startPrice)
+    if (p <= 0) {
+      promptAction.showToast({ message: '请输入起拍价' })
+      return
+    }
+    this.submitting = true
+    const image = await this.uploadImage()
+    this.submitting = false
+    this.onPublish(this.name.trim(), image, this.description.trim(), p, this.hours)
+    this.controller?.close()
+  }
 
   build() {
     Column({ space: 12 }) {
@@ -67,13 +165,44 @@ struct PublishAuctionDialog {
         .height(42)
         .fontSize(14)
         .onChange((v: string) => { this.name = v })
+
+      Column({ space: 8 }) {
+        Text('拍卖品图片').fontSize(14).fontColor('#333').width('100%')
+        Row({ space: 10 }) {
+          Button('📷 拍照')
+            .fontSize(13).height(34)
+            .backgroundColor('#1A5FD6').fontColor('#fff').borderRadius(17)
+            .onClick(() => { this.takePhoto() })
+          Button('🖼 相册')
+            .fontSize(13).height(34)
+            .backgroundColor('#fff').fontColor('#1A5FD6')
+            .border({ width: 1, color: '#1A5FD6' }).borderRadius(17)
+            .onClick(() => { this.selectFromAlbum() })
+        }
+        .width('100%')
+        if (this.previewUri) {
+          Image(this.previewUri).width(80).height(80).objectFit(ImageFit.Cover).borderRadius(8)
+        }
+      }
+      .width('100%')
+
+      Column({ space: 6 }) {
+        Text('描述').fontSize(14).fontColor('#333').width('100%')
+        TextArea({ placeholder: '描述拍卖品的成色、来源、亮点等' })
+          .height(80)
+          .fontSize(14)
+          .onChange((v: string) => { this.description = v })
+      }
+      .width('100%')
+
       TextInput({ placeholder: '起拍价（元）' })
         .type(InputType.Number)
         .height(42)
         .fontSize(14)
         .onChange((v: string) => { this.startPrice = v })
-      Row({ space: 8 }) {
-        Text('时长').fontSize(14).fontColor('#666')
+
+      Flex({ wrap: FlexWrap.Wrap }) {
+        Text('时长').fontSize(14).fontColor('#666').margin({ right: 8, top: 5 })
         ForEach([12, 24, 48, 72], (h: number) => {
           Text(h + '小时')
             .fontSize(13)
@@ -81,10 +210,12 @@ struct PublishAuctionDialog {
             .backgroundColor(this.hours === h ? '#1A5FD6' : '#f5f5f5')
             .padding({ left: 12, right: 12, top: 5, bottom: 5 })
             .borderRadius(14)
+            .margin({ right: 8, bottom: 8 })
             .onClick(() => { this.hours = h })
         })
       }
       .width('100%')
+
       Row({ space: 12 }) {
         Button('取消')
           .layoutWeight(1)
@@ -93,24 +224,19 @@ struct PublishAuctionDialog {
           .fontColor('#333')
           .borderRadius(20)
           .onClick(() => { this.controller?.close() })
-        Button('发布')
+        Button(this.submitting ? '发布中...' : '发布')
           .layoutWeight(1)
           .height(40)
           .backgroundColor('#1A5FD6')
           .fontColor('#fff')
           .borderRadius(20)
-          .onClick(() => {
-            const p = Number(this.startPrice)
-            if (this.name.trim() && p > 0) {
-              this.onPublish(this.name.trim(), p, this.hours)
-            }
-            this.controller?.close()
-          })
+          .enabled(!this.submitting)
+          .onClick(() => { this.submit() })
       }
       .width('100%')
     }
     .padding(20)
-    .width('85%')
+    .width('90%')
   }
 }
 
@@ -161,8 +287,8 @@ struct Auction {
   openPublishDialog() {
     this.publishDialogController = new CustomDialogController({
       builder: PublishAuctionDialog({
-        onPublish: (name: string, startPrice: number, hours: number) => {
-          this.doPublish(name, startPrice, hours)
+        onPublish: (name: string, image: string, description: string, startPrice: number, hours: number) => {
+          this.doPublish(name, image, description, startPrice, hours)
         }
       }),
       autoCancel: true
@@ -186,7 +312,7 @@ struct Auction {
     }
   }
 
-  async doPublish(name: string, startPrice: number, hours: number) {
+  async doPublish(name: string, image: string, description: string, startPrice: number, hours: number) {
     const isLoggedIn = await UserStore.isLoggedIn()
     if (!isLoggedIn) {
       promptAction.showToast({ message: '请先登录' })
@@ -194,7 +320,7 @@ struct Auction {
     }
     try {
       const endTime = Date.now() + hours * 60 * 60 * 1000
-      const resp = await AuctionApi.publish(name, 'phone1', startPrice, endTime)
+      const resp = await AuctionApi.publish(name, image, description, startPrice, endTime)
       if (resp.code === 200) {
         promptAction.showToast({ message: '发布成功' })
         this.loadAuctions()
@@ -225,18 +351,27 @@ struct Auction {
       .padding({ left: 16, right: 16, top: 16, bottom: 16 })
       .backgroundColor('#fff')
 
-      if (this.auctions.length === 0) {
+      // 竞拍规则说明（置顶固定）
+      Column({ space: 4 }) {
+        Text('📜 竞拍规则').fontSize(13).fontWeight(FontWeight.Bold).fontColor('#1A5FD6').width('100%')
+        Text('出价须高于当前价 · 倒计时结束价高者得 · 出价不可撤销').fontSize(11).fontColor('#666').width('100%')
+      }
+      .alignItems(HorizontalAlign.Start)
+      .width('100%')
+      .padding({ left: 16, right: 16, top: 10, bottom: 10 })
+      .backgroundColor('#EAF1FF')
+
+      Scroll() {
         Column({ space: 12 }) {
-          Text('🔨').fontSize(48)
-          Text('暂无拍卖中的商品').fontSize(14).fontColor('#999')
-        }
-        .width('100%')
-        .layoutWeight(1)
-        .justifyContent(FlexAlign.Center)
-        .backgroundColor('#f5f5f5')
-      } else {
-        Scroll() {
-          Column({ space: 12 }) {
+          if (this.auctions.length === 0) {
+            Column({ space: 12 }) {
+              Text('🔨').fontSize(48)
+              Text('暂无拍卖中的商品').fontSize(14).fontColor('#999')
+            }
+            .width('100%')
+            .padding({ top: 40, bottom: 40 })
+            .justifyContent(FlexAlign.Center)
+          } else {
             ForEach(this.auctions, (item: AuctionGoodsModel) => {
               Column({ space: 8 }) {
                 Row({ space: 12 }) {
@@ -274,7 +409,7 @@ struct Auction {
                   Column({ space: 4 }) {
                     Text(this.formatCountdown(item.endTime))
                       .fontSize(11)
-                      .fontColor('#1A5FD6')
+                      .fontColor('#e0620d')
                     Button('出价')
                       .fontSize(12)
                       .height(30)
@@ -286,6 +421,15 @@ struct Auction {
                   .alignItems(HorizontalAlign.End)
                 }
                 .width('100%')
+
+                if (item.description) {
+                  Text(item.description)
+                    .fontSize(12)
+                    .fontColor('#666')
+                    .maxLines(2)
+                    .textOverflow({ overflow: TextOverflow.Ellipsis })
+                    .width('100%')
+                }
               }
               .width('100%')
               .padding(12)
@@ -293,13 +437,13 @@ struct Auction {
               .borderRadius(10)
             }, (item: AuctionGoodsModel) => item.id.toString())
           }
-          .width('100%')
-          .padding(12)
         }
-        .layoutWeight(1)
-        .scrollBar(BarState.Off)
-        .backgroundColor('#f5f5f5')
+        .width('100%')
+        .padding(12)
       }
+      .layoutWeight(1)
+      .scrollBar(BarState.Off)
+      .backgroundColor('#f5f5f5')
     }
     .width('100%')
     .height('100%')

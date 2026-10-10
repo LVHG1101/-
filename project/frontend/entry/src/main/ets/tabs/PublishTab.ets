@@ -127,6 +127,14 @@ export struct PublishTab {
       promptAction.showToast({ message: '分类加载失败，请检查后端' })
       return
     }
+    if (!this.previewUri) {
+      promptAction.showToast({ message: '请上传商品图片' })
+      return
+    }
+    if (!this.description.trim()) {
+      promptAction.showToast({ message: '请填写商品描述' })
+      return
+    }
     this.isSubmitting = true
     try {
       const imageName = await this.uploadImage()
@@ -197,15 +205,19 @@ export struct PublishTab {
           .fontWeight(FontWeight.Bold)
           .fontColor('#333')
         Blank()
-        Button(this.aiLoading ? '估价中...' : '🤖 AI 智能估价')
-          .fontSize(13)
-          .height(32)
-          .fontColor('#1A5FD6')
-          .backgroundColor('#EAF1FF')
-          .borderRadius(16)
-          .padding({ left: 12, right: 12 })
-          .enabled(!this.aiLoading)
-          .onClick(() => { this.aiAppraise() })
+        Button() {
+          Row({ space: 4 }) {
+            Image($r('app.media.AI')).width(18).height(18)
+            Text(this.aiLoading ? '估价中...' : 'AI 智能估价').fontSize(13)
+          }
+        }
+        .height(32)
+        .fontColor('#1A5FD6')
+        .backgroundColor('#EAF1FF')
+        .borderRadius(16)
+        .padding({ left: 12, right: 12 })
+        .enabled(!this.aiLoading)
+        .onClick(() => { this.aiAppraise() })
       }
       .width('100%')
       .padding({ left: 16, right: 16, top: 16, bottom: 14 })
@@ -216,10 +228,12 @@ export struct PublishTab {
           if (this.aiAnalysis) {
             Column({ space: 6 }) {
               Row() {
-                Text('🤖 AI 建议')
+                Image($r('app.media.AI')).width(16).height(16)
+                Text('AI 建议')
                   .fontSize(14)
                   .fontWeight(FontWeight.Bold)
                   .fontColor('#1A5FD6')
+                  .margin({ left: 4 })
                 Blank()
                 Text('已自动填充')
                   .fontSize(11)

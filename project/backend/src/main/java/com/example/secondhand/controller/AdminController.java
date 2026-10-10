@@ -5,6 +5,7 @@ import com.example.secondhand.entity.ServiceItem;
 import com.example.secondhand.entity.User;
 import com.example.secondhand.repository.UserRepository;
 import com.example.secondhand.service.AfterSaleService;
+import com.example.secondhand.service.CategoryService;
 import com.example.secondhand.service.CreditService;
 import com.example.secondhand.service.OrderService;
 import com.example.secondhand.service.ServiceService;
@@ -39,6 +40,9 @@ public class AdminController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private CategoryService categoryService;
 
     /** 当前操作的管理员账号，用于信誉分变动流水的 operator 字段 */
     private String currentAdminName() {
@@ -211,5 +215,43 @@ public class AdminController {
     @GetMapping("/credit-records")
     public Map<String, Object> creditRecords() {
         return ok("查询成功", creditService.allRecords());
+    }
+
+    // ---------------- 商品管理 / 审核 ----------------
+
+    /** 全部商品（含下架） */
+    @GetMapping("/goods")
+    public Map<String, Object> goods() {
+        return ok("查询成功", categoryService.listAllGoods());
+    }
+
+    /** 下架商品 */
+    @PostMapping("/goods/offline")
+    public Map<String, Object> offlineGoods(@RequestBody Map<String, Object> body) {
+        Object id = body.get("goodsId");
+        if (id == null) {
+            return fail("goodsId 不能为空");
+        }
+        try {
+            categoryService.adminOfflineGoods(Long.valueOf(String.valueOf(id)));
+            return ok("已下架", null);
+        } catch (Exception e) {
+            return fail(e.getMessage());
+        }
+    }
+
+    /** 删除商品 */
+    @PostMapping("/goods/delete")
+    public Map<String, Object> deleteGoods(@RequestBody Map<String, Object> body) {
+        Object id = body.get("goodsId");
+        if (id == null) {
+            return fail("goodsId 不能为空");
+        }
+        try {
+            categoryService.adminDeleteGoods(Long.valueOf(String.valueOf(id)));
+            return ok("已删除", null);
+        } catch (Exception e) {
+            return fail(e.getMessage());
+        }
     }
 }

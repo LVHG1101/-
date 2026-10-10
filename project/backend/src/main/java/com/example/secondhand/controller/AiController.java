@@ -36,4 +36,27 @@ public class AiController {
         }
         return map;
     }
+
+    /** AI 智能客服问答 */
+    @PostMapping("/chat")
+    public Map<String, Object> chat(@RequestBody Map<String, String> body) {
+        Map<String, Object> map = new HashMap<>();
+        String question = body.getOrDefault("question", "");
+        if (question.isBlank()) {
+            map.put("code", 400);
+            map.put("message", "问题不能为空");
+            return map;
+        }
+        try {
+            Map<String, Object> data = new HashMap<>();
+            data.put("answer", aiService.chat(question));
+            map.put("code", 200);
+            map.put("message", "回复成功");
+            map.put("data", data);
+        } catch (Exception e) {
+            map.put("code", 500);
+            map.put("message", e.getMessage());
+        }
+        return map;
+    }
 }

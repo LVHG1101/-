@@ -53,7 +53,9 @@ public class SecurityConfiguration {
                                 "/auction/list",
                                 "/exchange/list",
                                 "/upload/image",
-                                "/ai/appraise").permitAll()
+                                "/uploads/**",
+                                "/ai/appraise",
+                                "/ai/chat").permitAll()
                         // 管理端接口仅限 admin 角色；UserService 加载用户时会补上 ROLE_ 前缀
                         .requestMatchers("/admin/**").hasRole("admin")
                         .anyRequest().authenticated()

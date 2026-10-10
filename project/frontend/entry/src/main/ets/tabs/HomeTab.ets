@@ -1,12 +1,15 @@
 import { router } from '@kit.ArkUI'
 import promptAction from '@ohos.promptAction'
 import { CategoryApi } from '../api/CategoryApi'
-import { GoodsItemModel } from '../model/DataModels'
+import { ExchangeApi } from '../api/ExchangeApi'
+import { AuctionApi } from '../api/AuctionApi'
+import { AiApi } from '../api/AiApi'
+import { GoodsItemModel, ExchangeGoodsModel, AuctionGoodsModel, CategoryItemModel } from '../model/DataModels'
 import { imageResource } from '../common/ImageUtil'
 
 interface CategoryEntry {
   name: string
-  icon: string
+  icon: Resource
 }
 
 interface ServiceEntry {
@@ -29,7 +32,7 @@ interface ExchangeGoods {
   id: number
   name: string
   wantName: string
-  image: Resource
+  image: Resource | string
   owner: string
   location: string
 }
@@ -37,16 +40,124 @@ interface ExchangeGoods {
 interface AuctionGoods {
   id: number
   name: string
-  image: Resource
+  image: Resource | string
   startPrice: number
   currentPrice: number
   bidCount: number
   endTime: string
 }
 
+interface ChatMessage {
+  role: string
+  content: string
+}
+
 @Builder
 export function buildHomeTab() {
   HomeTab()
+}
+
+@CustomDialog
+struct AiChatDialog {
+  controller?: CustomDialogController
+  @State messages: ChatMessage[] = []
+  @State input: string = ''
+  @State loading: boolean = false
+
+  aboutToAppear(): void {
+    this.messages.push({ role: 'ai', content: '你好，我是二手集市 AI 小助手，关于发布、拍卖、换物、订单等使用问题都可以问我～' })
+  }
+
+  async send() {
+    const q = this.input.trim()
+    if (!q || this.loading) {
+      return
+    }
+    const userMsg: ChatMessage = { role: 'user', content: q }
+    this.messages.push(userMsg)
+    this.input = ''
+    this.loading = true
+    try {
+      const answer = await AiApi.chat(q)
+      const aiMsg: ChatMessage = { role: 'ai', content: answer || '抱歉，我暂时无法回答，请稍后再试。' }
+      this.messages.push(aiMsg)
+    } catch (e) {
+      const errMsg: ChatMessage = { role: 'ai', content: '网络异常，请稍后再试。' }
+      this.messages.push(errMsg)
+    } finally {
+      this.loading = false
+    }
+  }
+
+  build() {
+    Column() {
+      Row() {
+        Image($r('app.media.AI')).width(22).height(22)
+        Text('AI 小助手').fontSize(16).fontWeight(FontWeight.Bold).fontColor('#333').margin({ left: 6 })
+        Blank()
+        Text('✕').fontSize(18).fontColor('#999')
+          .onClick(() => { this.controller?.close() })
+      }
+      .width('100%')
+      .padding({ left: 16, right: 16, top: 14, bottom: 14 })
+      .backgroundColor('#fff')
+
+      List({ space: 12 }) {
+        ForEach(this.messages, (m: ChatMessage) => {
+          ListItem() {
+            Row() {
+              if (m.role === 'user') {
+                Blank()
+                Text(m.content)
+                  .fontSize(14)
+                  .fontColor('#fff')
+                  .backgroundColor('#1A5FD6')
+                  .padding(12)
+                  .borderRadius(12)
+                  .constraintSize({ maxWidth: '72%' })
+              } else {
+                Text(m.content)
+                  .fontSize(14)
+                  .fontColor('#333')
+                  .backgroundColor('#FFFFFF')
+                  .padding(12)
+                  .borderRadius(12)
+                  .constraintSize({ maxWidth: '72%' })
+                Blank()
+              }
+            }
+            .width('100%')
+            .alignItems(VerticalAlign.Bottom)
+          }
+        }, (m: ChatMessage, index: number) => index.toString() + '_' + m.role)
+      }
+      .layoutWeight(1)
+      .width('100%')
+      .padding(12)
+      .backgroundColor('#f5f5f5')
+
+      Row({ space: 8 }) {
+        TextInput({ placeholder: '输入你的问题...', text: $$this.input })
+          .layoutWeight(1)
+          .height(40)
+          .fontSize(14)
+        Button(this.loading ? '···' : '发送')
+          .fontSize(14)
+          .height(40)
+          .fontColor('#fff')
+          .backgroundColor('#1A5FD6')
+          .borderRadius(20)
+          .padding({ left: 16, right: 16 })
+          .enabled(!this.loading)
+          .onClick(() => { this.send() })
+      }
+      .width('100%')
+      .padding({ left: 12, right: 12, top: 10, bottom: 10 })
+      .backgroundColor('#fff')
+    }
+    .width('100%')
+    .height('72%')
+  }
 }
 
 @Component
@@ -62,22 +173,15 @@ export struct HomeTab {
   ]
 
   @State categories: CategoryEntry[] = [
-    { name: '数码', icon: '📱' },
-    { name: '家电', icon: '📺' },
-    { name: '家居', icon: '🏠' },
-    { name: '其他', icon: '📦' },
-    { name: '拍卖', icon: '🔨' },
-    { name: '换物', icon: '🔄' },
+    { name: '数码', icon: $r('app.media.shuma') },
+    { name: '家电', icon: $r('app.media.jiadian') },
+    { name: '家居', icon: $r('app.media.jiaju') },
+    { name: '其他', icon: $r('app.media.qita') },
+    { name: '拍卖', icon: $r('app.media.paimai') },
+    { name: '换物', icon: $r('app.media.huanwu') },
   ]
 
-  @State nearbyGoods: GoodsEntry[] = [
-    { id: 1, name: 'iPhone 15 128G 九成新', price: 3999, image: $r('app.media.phone2'), tag: '同城', condition: '九成新' },
-    { id: 2, name: '小米笔记本 Pro 14', price: 3299, image: $r('app.media.computer'), tag: '包邮', condition: '九五新' },
-    { id: 3, name: 'iPad Air 5 64G', price: 2499, image: $r('app.media.pad'), condition: '九成新' },
-    { id: 4, name: 'AirPods Pro 2', price: 899, image: $r('app.media.hairphone'), condition: '八成新' },
-    { id: 5, name: 'Apple Watch S8', price: 1599, image: $r('app.media.watch'), condition: '九成新' },
-    { id: 6, name: '小米电视 55寸', price: 1299, image: $r('app.media.tv'), tag: '自提', condition: '九成新' },
-  ]
+  @State nearbyGoods: GoodsEntry[] = []
 
   @State serviceEntries: ServiceEntry[] = [
     { name: '回收', icon: $r('app.media.tradein'), emoji: '♻️' },
@@ -92,33 +196,118 @@ export struct HomeTab {
 
   @State auctionList: AuctionGoods[] = []
 
-  aboutToAppear(): void {
-    this.loadNearbyGoods()
+  private chatController: CustomDialogController | null = null
+
+  openChat() {
+    this.chatController = new CustomDialogController({
+      builder: AiChatDialog(),
+      autoCancel: true
+    })
+    this.chatController.open()
   }
 
-  async loadNearbyGoods() {
+  aboutToAppear(): void {
+    this.loadCategories()
+    this.loadNearbyGoods()
+    this.loadExchange()
+    this.loadAuction()
+  }
+
+  iconForCategory(code: string): Resource {
+    if (code === 'digital') return $r('app.media.shuma')
+    if (code === 'appliance') return $r('app.media.jiadian')
+    if (code === 'home') return $r('app.media.jiaju')
+    return $r('app.media.qita')
+  }
+
+  async loadCategories() {
     try {
-      const goods = await CategoryApi.goods(0)
-      if (goods.length > 0) {
-        const list: GoodsEntry[] = goods.slice(0, 6).map((g: GoodsItemModel) => {
-          const entry: GoodsEntry = {
-            id: g.id,
-            name: g.name,
-            price: g.price,
-            image: imageResource(g.image),
-            condition: g.quality,
-            lowCredit: g.lowCredit === true
-          }
+      const cats = await CategoryApi.list()
+      if (cats.length > 0) {
+        const list: CategoryEntry[] = cats.map((c: CategoryItemModel) => {
+          const entry: CategoryEntry = { name: c.name, icon: this.iconForCategory(c.code) }
           return entry
         })
-        this.nearbyGoods = list
+        list.push({ name: '拍卖', icon: $r('app.media.paimai') })
+        list.push({ name: '换物', icon: $r('app.media.huanwu') })
+        this.categories = list
       }
     } catch (e) {
     }
   }
 
+  async loadNearbyGoods() {
+    try {
+      const goods = await CategoryApi.goods(0)
+      const list: GoodsEntry[] = goods.slice(0, 6).map((g: GoodsItemModel) => {
+        const entry: GoodsEntry = {
+          id: g.id,
+          name: g.name,
+          price: g.price,
+          image: imageResource(g.image),
+          condition: g.quality,
+          lowCredit: g.lowCredit === true
+        }
+        return entry
+      })
+      this.nearbyGoods = list
+    } catch (e) {
+      this.nearbyGoods = []
+    }
+  }
+
+  async loadExchange() {
+    try {
+      const list = await ExchangeApi.list()
+      this.exchangeList = list.map((e: ExchangeGoodsModel) => {
+        const entry: ExchangeGoods = {
+          id: e.id,
+          name: e.name,
+          wantName: e.wantName,
+          image: imageResource(e.image),
+          owner: e.owner,
+          location: e.location
+        }
+        return entry
+      })
+    } catch (e) {
+      this.exchangeList = []
+    }
+  }
+
+  formatEndTime(ts: number): string {
+    const d = new Date(ts)
+    const m = (d.getMonth() + 1).toString().padStart(2, '0')
+    const day = d.getDate().toString().padStart(2, '0')
+    const h = d.getHours().toString().padStart(2, '0')
+    const min = d.getMinutes().toString().padStart(2, '0')
+    return m + '-' + day + ' ' + h + ':' + min
+  }
+
+  async loadAuction() {
+    try {
+      const list = await AuctionApi.list()
+      this.auctionList = list.map((a: AuctionGoodsModel) => {
+        const entry: AuctionGoods = {
+          id: a.id,
+          name: a.name,
+          image: imageResource(a.image),
+          startPrice: a.startPrice,
+          currentPrice: a.currentPrice,
+          bidCount: a.bidCount,
+          endTime: this.formatEndTime(a.endTime)
+        }
+        return entry
+      })
+    } catch (e) {
+      this.auctionList = []
+    }
+  }
+
   async refreshHome() {
     await this.loadNearbyGoods()
+    this.loadExchange()
+    this.loadAuction()
     this.isRefreshing = false
   }
 
@@ -166,8 +355,9 @@ export struct HomeTab {
   // ===================== 首页内容 =====================
   @Builder
   buildHomeContent() {
-    Column() {
-      this.buildHeader()
+    Stack({ alignContent: Alignment.BottomEnd }) {
+      Column() {
+        this.buildHeader()
       Refresh({ refreshing: $$this.isRefreshing }) {
         Scroll() {
           Column({ space: 10 }) {
@@ -186,10 +376,24 @@ export struct HomeTab {
       }
       .layoutWeight(1)
       .onRefreshing(() => { this.refreshHome() })
+      }
+      .width('100%')
+      .height('100%')
+      .backgroundColor('#f5f5f5')
+
+      Button() {
+        Image($r('app.media.AI')).width(30).height(30)
+      }
+      .width(52)
+      .height(52)
+      .borderRadius(26)
+      .backgroundColor('#fff')
+      .shadow({ radius: 12, color: '#401A5FD6', offsetY: 4 })
+      .margin({ right: 16, bottom: 24 })
+      .onClick(() => { this.openChat() })
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#f5f5f5')
   }
 
   @Builder
@@ -257,7 +461,7 @@ export struct HomeTab {
         ForEach(this.categories, (item: CategoryEntry) => {
           GridItem() {
             Column({ space: 6 }) {
-              Text(item.icon).fontSize(30)
+              Image(item.icon).width(30).height(30)
               Text(item.name).fontSize(12).fontColor('#333')
             }
             .width('100%')
@@ -300,8 +504,17 @@ export struct HomeTab {
       }
       .width('100%')
 
-      Grid() {
-        ForEach(this.nearbyGoods, (item: GoodsEntry) => {
+      if (this.nearbyGoods.length === 0) {
+        Column({ space: 8 }) {
+          Text('📭').fontSize(36)
+          Text('暂无商品').fontSize(13).fontColor('#999')
+        }
+        .width('100%')
+        .padding({ top: 20, bottom: 20 })
+        .justifyContent(FlexAlign.Center)
+      } else {
+        Grid() {
+          ForEach(this.nearbyGoods, (item: GoodsEntry) => {
           GridItem() {
             Column({ space: 4 }) {
               Image(item.image)
@@ -358,6 +571,7 @@ export struct HomeTab {
       .columnsTemplate('1fr 1fr')
       .columnsGap(10)
       .rowsGap(10)
+      }
     }
     .width('100%')
   }

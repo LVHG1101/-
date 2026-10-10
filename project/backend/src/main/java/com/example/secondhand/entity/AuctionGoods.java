@@ -18,6 +18,9 @@ public class AuctionGoods {
 
     private String image;
 
+    @Column(length = 500)
+    private String description; // 拍卖品描述/形容
+
     private Double startPrice;
 
     private Double currentPrice;

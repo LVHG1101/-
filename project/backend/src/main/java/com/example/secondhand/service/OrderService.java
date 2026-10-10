@@ -34,6 +34,9 @@ public class OrderService {
     @Autowired
     private CreditService creditService;
 
+    @Autowired
+    private CarbonService carbonService;
+
     @Transactional
     public Order createOrder(Long userId, List<Long> cartItemIds) {
         List<CartItem> items = cartItemRepository.findAllById(cartItemIds);
@@ -106,10 +109,12 @@ public class OrderService {
 
         creditService.change(userId, CreditService.BONUS_ORDER_COMPLETED,
                 "订单交易完成", CreditService.SOURCE_SYSTEM, "");
+        carbonService.add(userId, 10, "订单完成，二手交易减排奖励");
         for (Long sellerId : sellerIdsOf(orderId)) {
             if (!sellerId.equals(userId)) {
                 creditService.change(sellerId, CreditService.BONUS_ORDER_COMPLETED,
                         "订单交易完成", CreditService.SOURCE_SYSTEM, "");
+                carbonService.add(sellerId, 10, "订单完成，二手交易减排奖励");
             }
         }
     }

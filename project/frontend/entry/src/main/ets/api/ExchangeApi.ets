@@ -28,6 +28,7 @@ class PublishBody {
   name: string = ''
   wantName: string = ''
   image: string = ''
+  description: string = ''
   owner: string = ''
   location: string = ''
 }
@@ -49,12 +50,13 @@ export class ExchangeApi {
   }
 
   /** 发布换物 */
-  static async publish(name: string, wantName: string, image: string,
+  static async publish(name: string, wantName: string, image: string, description: string,
     owner: string, location: string): Promise<ApiResult> {
     const body = new PublishBody()
     body.name = name
     body.wantName = wantName
     body.image = image
+    body.description = description
     body.owner = owner
     body.location = location
     const json = await HttpUtil.postWithAuth('/exchange/publish', body)

@@ -20,6 +20,9 @@ public class ExchangeGoods {
 
     private String image;
 
+    @Column(length = 500)
+    private String description; // 换物描述/形容
+
     private String owner; // 发布者昵称
 
     private String location; // 位置

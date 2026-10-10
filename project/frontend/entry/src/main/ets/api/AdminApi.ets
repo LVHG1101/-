@@ -1,6 +1,6 @@
 import { HttpUtil } from '../common/HttpUtil'
 import { parseJson } from '../common/JsonHelper.js'
-import { AfterSaleModel, ServiceItemModel, AdminServiceOrderModel } from '../model/DataModels'
+import { AfterSaleModel, ServiceItemModel, AdminServiceOrderModel, GoodsItemModel } from '../model/DataModels'
 
 /** /admin/** 全部接口都要求管理员令牌，普通用户会拿到 403 */
 
@@ -50,6 +50,16 @@ class ServiceSaveBody {
 class ServiceOrderStatusBody {
   id: number = 0
   status: string = ''
+}
+
+class GoodsListResult {
+  code: number = 0
+  message: string = ''
+  data: GoodsItemModel[] = []
+}
+
+class GoodsIdBody {
+  goodsId: number = 0
 }
 
 export class AdminApi {
@@ -134,6 +144,31 @@ export class AdminApi {
     body.id = id
     body.status = status
     const json = await HttpUtil.postWithAuth('/admin/service-order/status', body)
+    return parseJson(json) as ApiResult
+  }
+
+  // ---------------- 商品管理 / 审核 ----------------
+
+  static async goods(): Promise<GoodsItemModel[]> {
+    const json = await HttpUtil.getWithAuth('/admin/goods')
+    const result = parseJson(json) as GoodsListResult
+    if (result.code !== 200) {
+      return []
+    }
+    return result.data ?? []
+  }
+
+  static async offlineGoods(goodsId: number): Promise<ApiResult> {
+    const body = new GoodsIdBody()
+    body.goodsId = goodsId
+    const json = await HttpUtil.postWithAuth('/admin/goods/offline', body)
+    return parseJson(json) as ApiResult
+  }
+
+  static async deleteGoods(goodsId: number): Promise<ApiResult> {
+    const body = new GoodsIdBody()
+    body.goodsId = goodsId
+    const json = await HttpUtil.postWithAuth('/admin/goods/delete', body)
     return parseJson(json) as ApiResult
   }
 }

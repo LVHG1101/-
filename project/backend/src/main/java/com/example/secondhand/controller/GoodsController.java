@@ -65,6 +65,103 @@ public class GoodsController {
         return map;
     }
 
+    /** 我发布的商品 */
+    @GetMapping("/mine")
+    public Map<String, Object> mine() {
+        Map<String, Object> map = new HashMap<>();
+        User user = currentUser();
+        if (user == null) {
+            map.put("code", 401);
+            map.put("message", "未登录");
+            return map;
+        }
+        map.put("code", 200);
+        map.put("message", "查询成功");
+        map.put("data", categoryService.myGoods(user.getId()));
+        return map;
+    }
+
+    /** 下架自己的商品 */
+    @PostMapping("/offline")
+    public Map<String, Object> offline(@RequestBody Map<String, Object> body) {
+        Map<String, Object> map = new HashMap<>();
+        User user = currentUser();
+        if (user == null) {
+            map.put("code", 401);
+            map.put("message", "未登录");
+            return map;
+        }
+        Object raw = body.get("goodsId");
+        if (raw == null) {
+            map.put("code", 400);
+            map.put("message", "goodsId 不能为空");
+            return map;
+        }
+        try {
+            categoryService.offlineGoods(user.getId(), Long.valueOf(String.valueOf(raw)));
+            map.put("code", 200);
+            map.put("message", "已下架");
+        } catch (Exception e) {
+            map.put("code", 400);
+            map.put("message", e.getMessage());
+        }
+        return map;
+    }
+
+    /** 重新上架自己的商品 */
+    @PostMapping("/online")
+    public Map<String, Object> online(@RequestBody Map<String, Object> body) {
+        Map<String, Object> map = new HashMap<>();
+        User user = currentUser();
+        if (user == null) {
+            map.put("code", 401);
+            map.put("message", "未登录");
+            return map;
+        }
+        Object raw = body.get("goodsId");
+        if (raw == null) {
+            map.put("code", 400);
+            map.put("message", "goodsId 不能为空");
+            return map;
+        }
+        try {
+            categoryService.onlineGoods(user.getId(), Long.valueOf(String.valueOf(raw)));
+            map.put("code", 200);
+            map.put("message", "已上架");
+        } catch (Exception e) {
+            map.put("code", 400);
+            map.put("message", e.getMessage());
+        }
+        return map;
+    }
+
+    /** 删除自己的商品 */
+    @PostMapping("/delete")
+    public Map<String, Object> delete(@RequestBody Map<String, Object> body) {
+        Map<String, Object> map = new HashMap<>();
+        User user = currentUser();
+        if (user == null) {
+            map.put("code", 401);
+            map.put("message", "未登录");
+            return map;
+        }
+        Object raw = body.get("goodsId");
+        if (raw == null) {
+            map.put("code", 400);
+            map.put("message", "goodsId 不能为空");
+            return map;
+        }
+        try {
+            categoryService.deleteGoods(user.getId(), Long.valueOf(String.valueOf(raw)));
+            map.put("code", 200);
+            map.put("message", "已删除");
+        } catch (Exception e) {
+            map.put("code", 400);
+            map.put("message", e.getMessage());
+        }
+        return map;
+    }
+
     @PostMapping("/publish")
     public Map<String, Object> publish(@RequestBody Goods body) {
         Map<String, Object> map = new HashMap<>();
